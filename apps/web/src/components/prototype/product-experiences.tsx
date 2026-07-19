@@ -32,6 +32,7 @@ import {
   type SearchItem,
   type SearchScope,
 } from "@/dummy/registry";
+import { announce } from "./accessibility";
 
 function go(url: string) {
   window.location.assign(url);
@@ -140,7 +141,10 @@ function SearchDetail({ item }: { item: SearchItem }) {
         <a className="pl-button pl-button-primary" href={item.href}>Buka detail <ArrowRight size={17} /></a>
         <button
           className="pl-button pl-button-secondary"
-          onClick={() => setSaved(isSaved ? saved.filter((id) => id !== item.id) : [...saved, item.id])}
+          onClick={() => {
+            setSaved(isSaved ? saved.filter((id) => id !== item.id) : [...saved, item.id]);
+            announce(isSaved ? `${item.title} dihapus dari item tersimpan.` : `${item.title} disimpan.`);
+          }}
           type="button"
         >
           {isSaved ? "Tersimpan ✓" : "Simpan"}
@@ -157,6 +161,11 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
   const selected = searchParams.get("selected");
   const sort = searchParams.get("sort") ?? "relevance";
   const prototypeState = searchParams.get("prototypeState");
+  useEffect(() => {
+    if (searchParams.get("saved") === "1") {
+      announce("Pencarian tersimpan. Query dan filter dipertahankan setelah autentikasi.");
+    }
+  }, [searchParams]);
   if (!scope || !(scope in scopeConfig)) {
     return (
       <div className="px-scope-picker">
@@ -233,7 +242,7 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
         <a className="pl-button pl-button-secondary" href={saveHref}>Simpan pencarian</a>
       </header>
       {searchParams.get("saved") === "1" ? (
-        <div className="px-save-banner" role="status"><CheckCircle size={19} weight="fill" /> Pencarian tersimpan. Query dan filter tetap sama setelah autentikasi.</div>
+        <div className="px-save-banner"><CheckCircle size={19} weight="fill" /> Pencarian tersimpan. Query dan filter tetap sama setelah autentikasi.</div>
       ) : null}
 
       <form className="px-search-command" action="/search" method="get">
@@ -443,7 +452,10 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
   const q = searchParams.get("q") ?? "";
   const selected = searchParams.get("selected");
   const [mobilePanel, setMobilePanel] = useState<"filters" | "results" | "detail">(selected ? "detail" : "results");
-  const updateOrg = (patch: Partial<OrgState>) => setOrgState({ ...orgState, ...patch });
+  const updateOrg = (patch: Partial<OrgState>, message?: string) => {
+    setOrgState({ ...orgState, ...patch });
+    if (message) announce(message);
+  };
 
   useEffect(() => {
     if (selected) setMobilePanel("detail");
@@ -478,18 +490,18 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
           <button className="pl-button pl-button-primary" type="submit">Cari</button>
         </form>
         <div className="px-org-mobile-tabs" aria-label="Tahap pencarian organisasi">
-          <button className={mobilePanel === "filters" ? "active" : ""} onClick={() => setMobilePanel("filters")} type="button">Filter</button>
-          <button className={mobilePanel === "results" ? "active" : ""} onClick={() => setMobilePanel("results")} type="button">Hasil ({results.length})</button>
-          <button className={mobilePanel === "detail" ? "active" : ""} disabled={!selectedItem} onClick={() => setMobilePanel("detail")} type="button">Detail</button>
+          <button aria-controls="org-filter-panel" aria-pressed={mobilePanel === "filters"} className={mobilePanel === "filters" ? "active" : ""} onClick={() => setMobilePanel("filters")} type="button">Filter</button>
+          <button aria-controls="org-result-panel" aria-pressed={mobilePanel === "results"} className={mobilePanel === "results" ? "active" : ""} onClick={() => setMobilePanel("results")} type="button">Hasil ({results.length})</button>
+          <button aria-controls="org-detail-panel" aria-pressed={mobilePanel === "detail"} className={mobilePanel === "detail" ? "active" : ""} disabled={!selectedItem} onClick={() => setMobilePanel("detail")} type="button">Detail</button>
         </div>
         <div className="px-org-three-panel" data-mobile-panel={mobilePanel}>
-          <aside className="px-filter-panel px-org-filter-panel">
+          <aside className="px-filter-panel px-org-filter-panel" id="org-filter-panel">
             <div className="px-filter-title"><Faders size={20} /><strong>Kriteria</strong></div>
             <label><span>Bidang</span><select name="field" value={searchParams.get("field") ?? ""} onChange={(event) => { const next = new URLSearchParams(searchParams.toString()); event.target.value ? next.set("field", event.target.value) : next.delete("field"); next.delete("selected"); replaceQuery(next); }}><option value="">Semua bidang</option>{filterOptions.field.map((value) => <option key={value}>{value}</option>)}</select></label>
             <label><span>{scope === "talent" ? "Availability" : "Readiness"}</span><select value={searchParams.get(scope === "talent" ? "availability" : "readiness") ?? ""} onChange={(event) => { const key = scope === "talent" ? "availability" : "readiness"; const next = new URLSearchParams(searchParams.toString()); event.target.value ? next.set(key, event.target.value) : next.delete(key); next.delete("selected"); replaceQuery(next); }}><option value="">Semua</option><option value={scope === "talent" ? "AVAILABLE" : "PROTOTYPE"}>{scope === "talent" ? "AVAILABLE" : "PROTOTYPE"}</option></select></label>
             <div className="px-editable-criteria"><NotePencil size={18} /><strong>Kriteria dapat diedit</strong><p>Evidence relevan, lokasi fleksibel, dan satu gap diperbolehkan.</p></div>
           </aside>
-          <section className="px-result-list px-org-result-panel">
+          <section className="px-result-list px-org-result-panel" id="org-result-panel" aria-label="Hasil pencarian organisasi">
             {results.map((item) => {
               const next = new URLSearchParams(searchParams.toString());
               next.set("selected", item.slug);
@@ -497,14 +509,14 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
             })}
           </section>
           {selectedItem ? (
-            <aside className="px-search-detail px-org-detail-panel">
+            <aside className="px-search-detail px-org-detail-panel" id="org-detail-panel" aria-label={`Detail ${selectedItem.title}`}>
               <div className="px-detail-heading"><div className="px-result-icon large"><IconForScope scope={selectedItem.scope} /></div><div><Status tone="teal">MATCH</Status><h2>{selectedItem.title}</h2><p>{selectedItem.owner}</p></div></div>
               <section><h3>Alasan</h3><ul className="px-check-list">{selectedItem.reasons.map((value) => <li key={value}><CheckCircle size={18} weight="fill" />{value}</li>)}</ul></section>
               <section><h3>Evidence</h3>{selectedItem.evidence.map((value) => <div className="px-evidence-line" key={value}><ClipboardText size={17} />{value}</div>)}</section>
               <section className="px-gap-box"><h3>Gap</h3>{selectedItem.gaps.map((value) => <p key={value}><Info size={17} />{value}</p>)}</section>
               <div className="px-detail-actions">
-                <button className="pl-button pl-button-primary" onClick={() => updateOrg({ shortlists: Array.from(new Set([...orgState.shortlists, selectedItem.slug])) })} type="button">{orgState.shortlists.includes(selectedItem.slug) ? "Sudah di shortlist ✓" : "Tambah ke shortlist"}</button>
-                <button className="pl-button pl-button-secondary" onClick={() => updateOrg({ requestedInfo: Array.from(new Set([...orgState.requestedInfo, selectedItem.slug])) })} type="button">{orgState.requestedInfo.includes(selectedItem.slug) ? "Informasi diminta ✓" : "Minta informasi"}</button>
+                <button className="pl-button pl-button-primary" onClick={() => updateOrg({ shortlists: Array.from(new Set([...orgState.shortlists, selectedItem.slug])) }, `${selectedItem.title} ditambahkan ke shared shortlist.`)} type="button">{orgState.shortlists.includes(selectedItem.slug) ? "Sudah di shortlist ✓" : "Tambah ke shortlist"}</button>
+                <button className="pl-button pl-button-secondary" onClick={() => updateOrg({ requestedInfo: Array.from(new Set([...orgState.requestedInfo, selectedItem.slug])) }, `Permintaan informasi untuk ${selectedItem.title} tersimpan.`)} type="button">{orgState.requestedInfo.includes(selectedItem.slug) ? "Informasi diminta ✓" : "Minta informasi"}</button>
               </div>
             </aside>
           ) : null}
@@ -518,9 +530,9 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
     return (
       <div className="px-workspace-page">
         <header className="px-search-heading"><div><p className="pl-eyebrow">Shared workspace</p><h1>Shortlists tim</h1><p>Reviewer, alasan, evidence, dan status tetap terlihat bersama.</p></div><a className="pl-button pl-button-primary" href="/organization/nexa-research-lab/search?scope=talent"><Plus size={17} /> Tambah kandidat</a></header>
-        <div className="px-table">
+        <div className="px-table" role="region" aria-label="Shared shortlist" tabIndex={0}>
           <div className="px-table-head"><span>Item</span><span>Alasan</span><span>Reviewer</span><span>Status</span></div>
-          {shortlisted.map((item) => <div className="px-table-row" key={item.id}><span><strong>{item.title}</strong><small>{item.owner}</small></span><span>{item.reasons[0]}</span><span><select value={orgState.reviewer} onChange={(event) => updateOrg({ reviewer: event.target.value })}><option value="">Pilih reviewer</option><option>Dimas K.</option><option>Ayu Rahman</option></select></span><span><Status tone={orgState.reviewer ? "teal" : "warning"}>{orgState.reviewer ? "REVIEWING" : "UNASSIGNED"}</Status></span></div>)}
+          {shortlisted.map((item) => <div className="px-table-row" key={item.id}><span><strong>{item.title}</strong><small>{item.owner}</small></span><span>{item.reasons[0]}</span><span><label className="sr-only" htmlFor={`reviewer-${item.slug}`}>Reviewer untuk {item.title}</label><select id={`reviewer-${item.slug}`} value={orgState.reviewer} onChange={(event) => updateOrg({ reviewer: event.target.value }, `${event.target.value || "Reviewer"} ditetapkan untuk ${item.title}.`)}><option value="">Pilih reviewer</option><option>Dimas K.</option><option>Ayu Rahman</option></select></span><span><Status tone={orgState.reviewer ? "teal" : "warning"}>{orgState.reviewer ? "REVIEWING" : "UNASSIGNED"}</Status></span></div>)}
         </div>
       </div>
     );
@@ -531,10 +543,10 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
     return (
       <div className="px-workspace-page">
         <header className="px-search-heading"><div><p className="pl-eyebrow">Collaboration pipeline</p><h1>Gerakkan keputusan, bukan prospek penjualan.</h1><p>Pipeline dibatasi pada alur kolaborasi dan ownership reviewer.</p></div></header>
-        <div className="px-pipeline">
-          {stages.map((stage) => <section key={stage}><header><strong>{stage}</strong><Status>{orgState.pipelineStage === stage ? "1" : "0"}</Status></header>{orgState.pipelineStage === stage ? <article><strong>Maya Pradipta · Urban Heat Pilot</strong><span>Reviewer: {orgState.reviewer || "Belum ditetapkan"}</span><Status tone={(orgState.decision ?? "PENDING") === "PENDING" ? "blue" : orgState.decision === "ACCEPTED" ? "teal" : "warning"}>{orgState.decision ?? "PENDING"}</Status><label>Pindahkan stage<select value={orgState.pipelineStage} onChange={(event) => updateOrg({ pipelineStage: event.target.value })}>{stages.map((value) => <option key={value}>{value}</option>)}</select></label><div><button onClick={() => updateOrg({ pipelineStage: "ACCEPTED", decision: "ACCEPTED" })}>Terima</button><button onClick={() => updateOrg({ pipelineStage: "WAITING" })}>Tunda</button><button onClick={() => updateOrg({ pipelineStage: "WAITING", decision: "DECLINED", notes: ["Kolaborasi ditolak dengan alasan tersimpan.", ...orgState.notes] })}>Tolak</button></div></article> : <div className="px-empty-slot">Belum ada item</div>}</section>)}
+        <div className="px-pipeline" role="region" aria-label="Collaboration pipeline" tabIndex={0}>
+          {stages.map((stage) => <section key={stage}><header><strong>{stage}</strong><Status>{orgState.pipelineStage === stage ? "1" : "0"}</Status></header>{orgState.pipelineStage === stage ? <article><strong>Maya Pradipta · Urban Heat Pilot</strong><span>Reviewer: {orgState.reviewer || "Belum ditetapkan"}</span><Status tone={(orgState.decision ?? "PENDING") === "PENDING" ? "blue" : orgState.decision === "ACCEPTED" ? "teal" : "warning"}>{orgState.decision ?? "PENDING"}</Status><label>Pindahkan stage<select value={orgState.pipelineStage} onChange={(event) => updateOrg({ pipelineStage: event.target.value }, `Tahap pipeline berubah menjadi ${event.target.value}.`)}>{stages.map((value) => <option key={value}>{value}</option>)}</select></label><div><button type="button" onClick={() => updateOrg({ pipelineStage: "ACCEPTED", decision: "ACCEPTED" }, "Kolaborasi diterima dan dipindahkan ke tahap ACCEPTED.")}>Terima</button><button type="button" onClick={() => updateOrg({ pipelineStage: "WAITING" }, "Kolaborasi dipindahkan ke tahap WAITING.")}>Tunda</button><button type="button" onClick={() => updateOrg({ pipelineStage: "WAITING", decision: "DECLINED", notes: ["Kolaborasi ditolak dengan alasan tersimpan.", ...orgState.notes] }, "Kolaborasi ditolak. Alasan tersimpan di catatan.")}>Tolak</button></div></article> : <div className="px-empty-slot">Belum ada item</div>}</section>)}
         </div>
-        <section className="px-note-box"><h2>Catatan tim</h2><form onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); const note = String(form.get("note") ?? ""); if (note) updateOrg({ notes: [...orgState.notes, note] }); event.currentTarget.reset(); }}><input name="note" placeholder="Tambahkan konteks keputusan" /><button className="pl-button pl-button-primary">Tambah catatan</button></form>{orgState.notes.map((note, index) => <p key={`${note}-${index}`}>{note}</p>)}</section>
+        <section className="px-note-box"><h2>Catatan tim</h2><form onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); const note = String(form.get("note") ?? ""); if (note) updateOrg({ notes: [...orgState.notes, note] }, "Catatan tim berhasil ditambahkan."); event.currentTarget.reset(); }}><label className="sr-only" htmlFor="pipeline-note">Catatan keputusan</label><input id="pipeline-note" name="note" placeholder="Tambahkan konteks keputusan" /><button className="pl-button pl-button-primary">Tambah catatan</button></form>{orgState.notes.map((note, index) => <p key={`${note}-${index}`}>{note}</p>)}</section>
       </div>
     );
   }
@@ -542,8 +554,8 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
   if (section === "members") {
     return (
       <div className="px-workspace-page">
-        <header className="px-search-heading"><div><p className="pl-eyebrow">Anggota dan permission</p><h1>Akses mengikuti least privilege.</h1></div><button className="pl-button pl-button-primary" onClick={() => updateOrg({ memberInvited: true })}>{orgState.memberInvited ? "Undangan terkirim ✓" : "Undang anggota"}</button></header>
-        <div className="px-table"><div className="px-table-head"><span>Anggota</span><span>Role</span><span>Scope</span><span>Status</span></div>{[["Ayu Rahman","Organization Owner","Semua workspace"],["Dimas K.","Project Manager","2 proyek"],["Nadia Putri","Scout / Reviewer","Search + shortlist"],["Bagus A.","Billing Admin","Billing saja"]].map(([name,role,scopeValue])=><div className="px-table-row" key={name}><span><strong>{name}</strong></span><span>{role}</span><span>{scopeValue}</span><span><Status tone="teal">ACTIVE</Status></span></div>)}</div>
+        <header className="px-search-heading"><div><p className="pl-eyebrow">Anggota dan permission</p><h1>Akses mengikuti least privilege.</h1></div><button className="pl-button pl-button-primary" onClick={() => updateOrg({ memberInvited: true }, "Undangan anggota berhasil disiapkan.")}>{orgState.memberInvited ? "Undangan terkirim ✓" : "Undang anggota"}</button></header>
+        <div className="px-table" role="region" aria-label="Daftar anggota organisasi" tabIndex={0}><div className="px-table-head"><span>Anggota</span><span>Role</span><span>Scope</span><span>Status</span></div>{[["Ayu Rahman","Organization Owner","Semua workspace"],["Dimas K.","Project Manager","2 proyek"],["Nadia Putri","Scout / Reviewer","Search + shortlist"],["Bagus A.","Billing Admin","Billing saja"]].map(([name,role,scopeValue])=><div className="px-table-row" key={name}><span><strong>{name}</strong></span><span>{role}</span><span>{scopeValue}</span><span><Status tone="teal">ACTIVE</Status></span></div>)}</div>
       </div>
     );
   }
@@ -552,7 +564,7 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
     return (
       <div className="px-workspace-page px-billing-page">
         <header className="px-search-heading"><div><p className="pl-eyebrow">Area sekunder · Billing</p><h1>Organization plan</h1><p>Billing tidak mengubah urutan tugas utama dan tidak muncul di primary navbar.</p></div></header>
-        <div className="px-public-grid"><section className="px-content-card"><Status tone="teal">ACTIVE</Status><h2>Organization</h2><p>Shared search, shortlists, pipeline, reviewer assignment, dan kapasitas tim.</p><div className="px-info-grid"><div><span>Billing owner</span><strong>Bagus A.</strong></div><div><span>Renewal</span><strong>19 Agustus 2026</strong></div></div></section><aside className="px-public-action"><WarningCircle size={26} /><h2>Billing mismatch recovery</h2><p>Jika entitlement belum sinkron, proyek, pipeline, dan tugas inti tetap dapat dibuka.</p><button className="pl-button pl-button-primary" onClick={() => updateOrg({ billingRefreshed: true })}>{orgState.billingRefreshed ? "Billing tersinkron ✓" : "Refresh billing"}</button></aside></div>
+        <div className="px-public-grid"><section className="px-content-card"><Status tone="teal">ACTIVE</Status><h2>Organization</h2><p>Shared search, shortlists, pipeline, reviewer assignment, dan kapasitas tim.</p><div className="px-info-grid"><div><span>Billing owner</span><strong>Bagus A.</strong></div><div><span>Renewal</span><strong>19 Agustus 2026</strong></div></div></section><aside className="px-public-action"><WarningCircle size={26} /><h2>Billing mismatch recovery</h2><p>Jika entitlement belum sinkron, proyek, pipeline, dan tugas inti tetap dapat dibuka.</p><button className="pl-button pl-button-primary" onClick={() => updateOrg({ billingRefreshed: true }, "Billing berhasil disinkronkan.")}>{orgState.billingRefreshed ? "Billing tersinkron ✓" : "Refresh billing"}</button></aside></div>
       </div>
     );
   }

@@ -22,7 +22,8 @@ import {
   UserCircle,
   UsersThree,
 } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { announce } from "./accessibility";
 
 type HomeProps = {
   onFirstValue?: () => void;
@@ -375,7 +376,7 @@ export function NewUserHome({ onFirstValue }: HomeProps) {
       </section>
 
       {workspaceOpen ? (
-        <section className="pl-inline-create" aria-live="polite">
+        <section className="pl-inline-create">
           <div>
             <p className="pl-eyebrow">Workspace baru</p>
             <h2>Mulai dari satu kalimat masalah.</h2>
@@ -393,6 +394,7 @@ export function NewUserHome({ onFirstValue }: HomeProps) {
               sessionStorage.setItem("projectlink-goal-drafts", JSON.stringify({ activeGoal, drafts: goalDrafts }));
               setDraftSaved(true);
               setPreviewOpen(true);
+              announce("Draft tersimpan. Preview publikasi tersedia.");
             }} type="button">
               Simpan draft dan preview <ArrowRight size={18} />
             </button>
@@ -402,12 +404,13 @@ export function NewUserHome({ onFirstValue }: HomeProps) {
       ) : null}
 
       {previewOpen ? (
-        <section className="pl-inline-create pl-publish-preview" aria-live="polite">
+        <section className="pl-inline-create pl-publish-preview">
           <div><p className="pl-eyebrow">Preview sebelum publikasi</p><h2>{goalDrafts[activeGoal]?.title || "Judul belum diisi"}</h2><p>{goalDrafts[activeGoal]?.problem || "Masalah belum dijelaskan."}</p></div>
           <div className="pl-preview-checks"><span><CheckCircle size={18} weight="fill" /> Draft tersimpan untuk tujuan ini</span><span><CheckCircle size={18} weight="fill" /> AI suggestion tetap dapat diedit</span><span><CheckCircle size={18} weight="fill" /> Belum dipublikasikan</span></div>
           <div className="pl-button-row">
             <button className="pl-button pl-button-primary" onClick={() => {
               sessionStorage.setItem("projectlink-first-value", "true");
+              announce("Nilai pertama berhasil dipublikasikan.");
               onFirstValue?.();
             }} type="button">Publikasikan nilai pertama</button>
             <button className="pl-button pl-button-secondary" onClick={() => setPreviewOpen(false)} type="button">Kembali edit</button>
@@ -443,6 +446,11 @@ export function ReturningUserHome({
   const [activities, setActivities] = useState<string[]>([]);
   const [rejectionCount, setRejectionCount] = useState(0);
   const [savedMatches, setSavedMatches] = useState<string[]>([]);
+  const actionDetailRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (selectedAction) actionDetailRef.current?.focus();
+  }, [selectedAction]);
 
   useEffect(() => {
     try {
@@ -463,6 +471,7 @@ export function ReturningUserHome({
     setSelectedAction(null);
     sessionStorage.setItem("projectlink-completed-actions", JSON.stringify(nextActions));
     sessionStorage.setItem("projectlink-activity", JSON.stringify(nextActivity));
+    announce(activity);
   };
 
   const pendingActions = [
@@ -488,7 +497,7 @@ export function ReturningUserHome({
             <span className={`pl-priority ${index === 0 ? "high" : ""}`}>{label}</span>
             <h3>{title}</h3>
             <p>{text}</p>
-            <button onClick={() => setSelectedAction(id)} type="button">Tinjau <ArrowRight size={16} /></button>
+            <button id={`action-trigger-${id}`} aria-expanded={selectedAction === id} aria-controls="action-detail" onClick={() => setSelectedAction(id)} type="button">Tinjau <ArrowRight size={16} /></button>
           </article>
         ))}
       </section> : (
@@ -496,8 +505,21 @@ export function ReturningUserHome({
       )}
 
       {selectedAction ? (
-        <section className="pl-action-expanded" aria-live="polite">
-          <div><p className="pl-eyebrow">Action required</p><h2>{pendingActions.find(([id]) => id === selectedAction)?.[1]}</h2><p>{pendingActions.find(([id]) => id === selectedAction)?.[2]}</p></div>
+        <section
+          className="pl-action-expanded"
+          id="action-detail"
+          ref={actionDetailRef}
+          tabIndex={-1}
+          aria-labelledby="action-detail-title"
+          onKeyDown={(event) => {
+            if (event.key === "Escape" && selectedAction) {
+              const trigger = document.getElementById(`action-trigger-${selectedAction}`);
+              setSelectedAction(null);
+              window.setTimeout(() => trigger?.focus(), 0);
+            }
+          }}
+        >
+          <div><p className="pl-eyebrow">Action required</p><h2 id="action-detail-title">{pendingActions.find(([id]) => id === selectedAction)?.[1]}</h2><p>{pendingActions.find(([id]) => id === selectedAction)?.[2]}</p></div>
           {selectedAction === "contribution" ? (
             <>
               <div className="pl-evidence-summary"><strong>Pipeline validasi data sensor</strong><span>Outcome: waktu pemrosesan turun 38% · Evidence tersedia</span></div>
@@ -505,7 +527,7 @@ export function ReturningUserHome({
               <div className="pl-button-row"><button className="pl-button pl-button-primary" onClick={() => completeAction("contribution", "Kontribusi AquaLoop dikonfirmasi")} type="button">Konfirmasi kontribusi</button><button className="pl-button pl-button-secondary" onClick={() => revisionNote && completeAction("contribution", `Revisi diminta: ${revisionNote}`)} type="button">Minta revisi</button></div>
             </>
           ) : (
-            <div className="pl-button-row"><button className="pl-button pl-button-primary" onClick={() => completeAction(selectedAction, `${pendingActions.find(([id]) => id === selectedAction)?.[1]} selesai`)} type="button">Selesaikan tindakan</button><button className="pl-button pl-button-secondary" onClick={() => setSelectedAction(null)} type="button">Tutup</button></div>
+            <div className="pl-button-row"><button className="pl-button pl-button-primary" onClick={() => completeAction(selectedAction, `${pendingActions.find(([id]) => id === selectedAction)?.[1]} selesai`)} type="button">Selesaikan tindakan</button><button className="pl-button pl-button-secondary" onClick={() => { const trigger = document.getElementById(`action-trigger-${selectedAction}`); setSelectedAction(null); window.setTimeout(() => trigger?.focus(), 0); }} type="button">Tutup</button></div>
           )}
         </section>
       ) : null}
@@ -555,10 +577,12 @@ export function ReturningUserHome({
                   const nextSaved = savedMatches.includes(title) ? savedMatches.filter((value) => value !== title) : [...savedMatches, title];
                   setSavedMatches(nextSaved);
                   sessionStorage.setItem("projectlink-saved-matches", JSON.stringify(nextSaved));
+                  announce(savedMatches.includes(title) ? `${title} dihapus dari matching tersimpan.` : `${title} disimpan.`);
                 }} type="button">{savedMatches.includes(title) ? "Tersimpan ✓" : "Simpan"}</button><button onClick={() => {
                   const nextCount = rejectionCount + 1;
                   setRejectionCount(nextCount);
                   sessionStorage.setItem("projectlink-rejection-count", String(nextCount));
+                  announce(`${title} ditandai tidak relevan. Feedback diterapkan.`);
                   onHideRecommendation?.();
                 }} type="button">Tidak relevan</button></div>
               </article>

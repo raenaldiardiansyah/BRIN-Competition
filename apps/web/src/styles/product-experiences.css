@@ -146,6 +146,12 @@
   align-items: start;
 }
 
+.px-search-layout > *,
+.px-org-three-panel > *,
+.px-public-grid > * {
+  min-width: 0;
+}
+
 .px-search-experience.has-selected .px-search-layout {
   grid-template-columns: 220px minmax(330px, 4fr) minmax(360px, 5fr);
 }
@@ -943,11 +949,39 @@
     top: auto;
   }
   .px-table {
-    overflow-x: auto;
+    overflow: visible;
+    border: 0;
+    background: transparent;
   }
-  .px-table-head,
+  .px-table-head {
+    display: none;
+  }
   .px-table-row {
-    min-width: 720px;
+    min-width: 0;
+    grid-template-columns: 1fr;
+    gap: 9px;
+    margin-bottom: 10px;
+    border: 1px solid #dce8fb;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .px-table-row > span {
+    display: grid;
+    gap: 3px;
+  }
+  .px-table-row > span:nth-child(2)::before {
+    color: #647a96;
+    font-size: .66rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    content: "Alasan / Role";
+  }
+  .px-table-row > span:nth-child(3)::before {
+    color: #647a96;
+    font-size: .66rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    content: "Reviewer / Scope";
   }
   .px-result-list.wide {
     grid-template-columns: 1fr;
@@ -971,6 +1005,29 @@
   }
   .px-result-card > svg {
     display: none;
+  }
+}
+
+@media (max-width: 340px) {
+  .px-search-experience,
+  .px-scope-picker,
+  .px-public-page,
+  .px-org-search,
+  .px-workspace-page {
+    padding-top: 26px;
+  }
+
+  .px-search-heading h1,
+  .px-scope-picker h1,
+  .px-public-hero h1 {
+    font-size: 1.9rem;
+  }
+
+  .px-content-card,
+  .px-public-action,
+  .px-note-box,
+  .px-search-detail {
+    padding: 18px;
   }
 }
 

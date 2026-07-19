@@ -5,6 +5,71 @@
   transition: max-width 180ms ease;
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+@supports (overflow: clip) {
+  html,
+  body {
+    overflow-x: clip;
+  }
+}
+
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 300;
+  padding: 11px 15px;
+  border-radius: 8px;
+  background: #06245a;
+  color: #fff;
+  font-weight: 800;
+  transform: translateY(-150%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(8, 201, 165, .58);
+  outline-offset: 3px;
+}
+
+.pl-button,
+.button,
+.search-back,
+.navbar-search-button,
+.prototype-control-trigger,
+.prototype-control-heading button,
+.prototype-width-control button,
+.prototype-reset-row button,
+.primary-nav a,
+.pl-action-card > button,
+.pl-card-actions button,
+.px-active-filter-row button,
+.px-org-mobile-tabs button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+input,
+select,
+textarea {
+  min-height: 44px;
+}
+
+.page-container > *,
+.site-header > *,
+.primary-nav,
+.contextual-search {
+  min-width: 0;
+}
+
 .site-header {
   position: sticky;
   top: 0;
@@ -316,5 +381,25 @@
 
   .context-switch > span:last-child {
     display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .site-header {
+    gap: 7px;
+  }
+
+  .account-area .button.primary {
+    padding-inline: 9px;
+  }
+
+  .page-container,
+  .site-footer {
+    width: min(calc(100% - 20px), 1280px);
+  }
+
+  .prototype-control-trigger,
+  .prototype-control-panel {
+    right: 10px;
   }
 }

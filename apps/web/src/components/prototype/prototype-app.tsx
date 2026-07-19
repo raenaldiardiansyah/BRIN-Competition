@@ -29,6 +29,7 @@ import {
   PublicEntityExperience,
 } from "./product-experiences";
 import type { SearchScope } from "@/dummy/registry";
+import { GlobalStatusAnnouncer } from "./accessibility";
 
 type Persona = "guest" | "new" | "returning" | "organization";
 type SimulatedState = "normal" | "loading" | "empty" | "error";
@@ -1893,6 +1894,8 @@ function AppShell({
       data-preview-width={demo.previewWidth}
       style={demo.previewWidth === "fluid" ? undefined : { maxWidth: `${demo.previewWidth}px`, marginInline: "auto" }}
     >
+      <a className="skip-link" href="#main-content">Lewati ke konten utama</a>
+      <GlobalStatusAnnouncer />
       <PrototypeControls
         demo={demo}
         updateDemo={updateDemo}
@@ -1996,7 +1999,7 @@ function AppShell({
           )}
         </div>
       </header>
-      <main className="page-container">
+      <main className="page-container" id="main-content" tabIndex={-1}>
         {simulatedState === "normal" ? children : <SimulatedPageState state={simulatedState} onReset={() => setSimulatedState("normal")} />}
       </main>
       <footer className="site-footer">
