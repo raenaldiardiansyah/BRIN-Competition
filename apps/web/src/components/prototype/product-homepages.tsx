@@ -22,7 +22,7 @@ import {
   UserCircle,
   UsersThree,
 } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type HomeProps = {
   onFirstValue?: () => void;
@@ -290,6 +290,46 @@ export function GuestHome() {
 
 export function NewUserHome({ onFirstValue }: HomeProps) {
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [activeGoal, setActiveGoal] = useState("find-project");
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [goalDrafts, setGoalDrafts] = useState<Record<string, { title: string; problem: string }>>({
+    "show-project": { title: "", problem: "" },
+    "find-project": { title: "Pemetaan kualitas air komunitas", problem: "Data kualitas air lokal belum mudah dibaca dan dibandingkan." },
+    "find-member": { title: "", problem: "" },
+    "find-talent-or-innovation": { title: "", problem: "" },
+    "publish-opportunity": { title: "", problem: "" },
+  });
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem("projectlink-goal-drafts");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as { activeGoal?: string; drafts?: typeof goalDrafts };
+        if (parsed.activeGoal) setActiveGoal(parsed.activeGoal);
+        if (parsed.drafts) setGoalDrafts(parsed.drafts);
+      } catch {
+        // Stable defaults remain available when stored prototype data is invalid.
+      }
+    }
+  }, []);
+
+  const updateGoalDraft = (patch: Partial<{ title: string; problem: string }>) => {
+    const nextDrafts = {
+      ...goalDrafts,
+      [activeGoal]: { ...goalDrafts[activeGoal], ...patch },
+    };
+    setGoalDrafts(nextDrafts);
+    sessionStorage.setItem("projectlink-goal-drafts", JSON.stringify({ activeGoal, drafts: nextDrafts }));
+    setDraftSaved(false);
+  };
+
+  const changeGoal = (nextGoal: string) => {
+    setActiveGoal(nextGoal);
+    sessionStorage.setItem("projectlink-goal-drafts", JSON.stringify({ activeGoal: nextGoal, drafts: goalDrafts }));
+    setWorkspaceOpen(false);
+    setPreviewOpen(false);
+  };
 
   return (
     <div className="pl-home pl-dashboard">
@@ -301,10 +341,12 @@ export function NewUserHome({ onFirstValue }: HomeProps) {
         </div>
         <label className="pl-goal-select">
           <span>Tujuan aktif</span>
-          <select defaultValue="find-project">
+          <select value={activeGoal} onChange={(event) => changeGoal(event.target.value)}>
             <option value="find-project">Menemukan proyek</option>
             <option value="show-project">Menampilkan proyek</option>
-            <option value="find-team">Mencari anggota tim</option>
+            <option value="find-member">Mencari anggota tim</option>
+            <option value="find-talent-or-innovation">Mencari talent atau inovasi</option>
+            <option value="publish-opportunity">Menerbitkan peluang</option>
           </select>
         </label>
       </section>
@@ -312,8 +354,8 @@ export function NewUserHome({ onFirstValue }: HomeProps) {
       <section className="pl-onboarding-grid">
         <div className="pl-next-card">
           <span className="pl-kicker"><RocketLaunch size={16} weight="fill" /> Langkah berikutnya</span>
-          <h2>Buat workspace proyek pertama Anda.</h2>
-          <p>Mulai dari masalah yang ingin diselesaikan. Detail dapat dilengkapi bertahap.</p>
+          <h2>{activeGoal === "find-project" ? "Bangun konteks agar rekomendasi proyek lebih relevan." : activeGoal === "show-project" ? "Buat workspace proyek pertama Anda." : activeGoal === "publish-opportunity" ? "Susun peluang dengan kontribusi yang jelas." : "Jelaskan kebutuhan kolaborasi Anda."}</h2>
+          <p>Input untuk setiap tujuan disimpan terpisah. Anda dapat berganti tujuan tanpa kehilangan draft.</p>
           <div className="pl-progress"><span style={{ width: "40%" }} /></div>
           <span className="pl-progress-label">2 dari 5 dasar profil sudah siap</span>
           <button className="pl-button pl-button-primary" onClick={() => setWorkspaceOpen(true)} type="button">
@@ -340,18 +382,37 @@ export function NewUserHome({ onFirstValue }: HomeProps) {
           </div>
           <label>
             Nama proyek
-            <input defaultValue="Pemetaan kualitas air komunitas" />
+            <input value={goalDrafts[activeGoal]?.title ?? ""} onChange={(event) => updateGoalDraft({ title: event.target.value })} />
           </label>
           <label>
             Masalah yang ingin diselesaikan
-            <textarea defaultValue="Data kualitas air lokal belum mudah dibaca dan dibandingkan." />
+            <textarea value={goalDrafts[activeGoal]?.problem ?? ""} onChange={(event) => updateGoalDraft({ problem: event.target.value })} />
           </label>
           <div className="pl-button-row">
-            <button className="pl-button pl-button-primary" onClick={onFirstValue} type="button">
-              Simpan dan lanjutkan <ArrowRight size={18} />
+            <button className="pl-button pl-button-primary" onClick={() => {
+              sessionStorage.setItem("projectlink-goal-drafts", JSON.stringify({ activeGoal, drafts: goalDrafts }));
+              setDraftSaved(true);
+              setPreviewOpen(true);
+            }} type="button">
+              Simpan draft dan preview <ArrowRight size={18} />
             </button>
             <button className="pl-button pl-button-ghost" onClick={() => setWorkspaceOpen(false)} type="button">Nanti saja</button>
           </div>
+        </section>
+      ) : null}
+
+      {previewOpen ? (
+        <section className="pl-inline-create pl-publish-preview" aria-live="polite">
+          <div><p className="pl-eyebrow">Preview sebelum publikasi</p><h2>{goalDrafts[activeGoal]?.title || "Judul belum diisi"}</h2><p>{goalDrafts[activeGoal]?.problem || "Masalah belum dijelaskan."}</p></div>
+          <div className="pl-preview-checks"><span><CheckCircle size={18} weight="fill" /> Draft tersimpan untuk tujuan ini</span><span><CheckCircle size={18} weight="fill" /> AI suggestion tetap dapat diedit</span><span><CheckCircle size={18} weight="fill" /> Belum dipublikasikan</span></div>
+          <div className="pl-button-row">
+            <button className="pl-button pl-button-primary" onClick={() => {
+              sessionStorage.setItem("projectlink-first-value", "true");
+              onFirstValue?.();
+            }} type="button">Publikasikan nilai pertama</button>
+            <button className="pl-button pl-button-secondary" onClick={() => setPreviewOpen(false)} type="button">Kembali edit</button>
+          </div>
+          {draftSaved ? <span className="pl-save-feedback">Draft tersimpan di sesi prototype.</span> : null}
         </section>
       ) : null}
 
@@ -376,31 +437,78 @@ export function ReturningUserHome({
   onHideRecommendation,
   recommendationHidden,
 }: HomeProps) {
+  const [completedActions, setCompletedActions] = useState<string[]>([]);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
+  const [revisionNote, setRevisionNote] = useState("");
+  const [activities, setActivities] = useState<string[]>([]);
+  const [rejectionCount, setRejectionCount] = useState(0);
+  const [savedMatches, setSavedMatches] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      setCompletedActions(JSON.parse(sessionStorage.getItem("projectlink-completed-actions") ?? "[]") as string[]);
+      setActivities(JSON.parse(sessionStorage.getItem("projectlink-activity") ?? "[]") as string[]);
+      setRejectionCount(Number(sessionStorage.getItem("projectlink-rejection-count") ?? "0"));
+      setSavedMatches(JSON.parse(sessionStorage.getItem("projectlink-saved-matches") ?? "[]") as string[]);
+    } catch {
+      setCompletedActions([]);
+    }
+  }, []);
+
+  const completeAction = (id: string, activity: string) => {
+    const nextActions = Array.from(new Set([...completedActions, id]));
+    const nextActivity = [activity, ...activities];
+    setCompletedActions(nextActions);
+    setActivities(nextActivity);
+    setSelectedAction(null);
+    sessionStorage.setItem("projectlink-completed-actions", JSON.stringify(nextActions));
+    sessionStorage.setItem("projectlink-activity", JSON.stringify(nextActivity));
+  };
+
+  const pendingActions = [
+    ["contribution", "Konfirmasi kontribusi", "AquaLoop meminta persetujuan output pipeline.", "Konfirmasi"],
+    ["invitation", "Balas undangan", "Nexa Research Lab mengundang Anda ke pilot baru.", "Undangan"],
+    ["evidence", "Lengkapi evidence", "Satu output belum memiliki tautan bukti.", "Evidence"],
+  ].filter(([id]) => !completedActions.includes(id));
+
   return (
     <div className="pl-home pl-dashboard">
       <section className="pl-welcome pl-welcome-returning">
         <div>
           <p className="pl-eyebrow">Minggu ini di ProjectLink</p>
           <h1>Selamat datang kembali, Maya.</h1>
-          <p>Ada tiga hal yang layak Anda tinjau sebelum melanjutkan pekerjaan.</p>
+          <p>{pendingActions.length ? `Ada ${pendingActions.length} hal yang layak Anda tinjau sebelum melanjutkan pekerjaan.` : "Semua tindakan utama sudah selesai."}</p>
         </div>
         <Anchor href="/notifications" className="pl-button pl-button-primary">Tinjau semua tindakan</Anchor>
       </section>
 
-      <section className="pl-action-grid">
-        {[
-          ["Konfirmasi kontribusi", "AquaLoop meminta persetujuan output pipeline.", "Konfirmasi", "/projects/aqua-loop/contributions"],
-          ["Balas undangan", "Nexa Research Lab mengundang Anda ke pilot baru.", "Undangan", "/collaboration"],
-          ["Lengkapi evidence", "Satu output belum memiliki tautan bukti.", "Evidence", "/me"],
-        ].map(([title, text, label, href], index) => (
-          <article className="pl-action-card" key={title}>
+      {pendingActions.length ? <section className="pl-action-grid">
+        {pendingActions.map(([id, title, text, label], index) => (
+          <article className="pl-action-card" key={id}>
             <span className={`pl-priority ${index === 0 ? "high" : ""}`}>{label}</span>
             <h3>{title}</h3>
             <p>{text}</p>
-            <a href={href}>Tinjau <ArrowRight size={16} /></a>
+            <button onClick={() => setSelectedAction(id)} type="button">Tinjau <ArrowRight size={16} /></button>
           </article>
         ))}
-      </section>
+      </section> : (
+        <section className="pl-all-complete"><CheckCircle size={38} weight="duotone" /><div><p className="pl-eyebrow">Semua selesai</p><h2>Tidak ada tugas yang menunggu.</h2><p>Lanjutkan proyek aktif atau buka discovery ringan tanpa urgency buatan.</p></div><div className="pl-button-row"><Anchor href="/projects/aqua-loop/manage" className="pl-button pl-button-primary">Kembali ke proyek</Anchor><Anchor href="/collaboration">Buka kolaborasi</Anchor></div></section>
+      )}
+
+      {selectedAction ? (
+        <section className="pl-action-expanded" aria-live="polite">
+          <div><p className="pl-eyebrow">Action required</p><h2>{pendingActions.find(([id]) => id === selectedAction)?.[1]}</h2><p>{pendingActions.find(([id]) => id === selectedAction)?.[2]}</p></div>
+          {selectedAction === "contribution" ? (
+            <>
+              <div className="pl-evidence-summary"><strong>Pipeline validasi data sensor</strong><span>Outcome: waktu pemrosesan turun 38% · Evidence tersedia</span></div>
+              <label>Catatan revisi<textarea value={revisionNote} onChange={(event) => setRevisionNote(event.target.value)} placeholder="Jelaskan bagian yang perlu diperbaiki" /></label>
+              <div className="pl-button-row"><button className="pl-button pl-button-primary" onClick={() => completeAction("contribution", "Kontribusi AquaLoop dikonfirmasi")} type="button">Konfirmasi kontribusi</button><button className="pl-button pl-button-secondary" onClick={() => revisionNote && completeAction("contribution", `Revisi diminta: ${revisionNote}`)} type="button">Minta revisi</button></div>
+            </>
+          ) : (
+            <div className="pl-button-row"><button className="pl-button pl-button-primary" onClick={() => completeAction(selectedAction, `${pendingActions.find(([id]) => id === selectedAction)?.[1]} selesai`)} type="button">Selesaikan tindakan</button><button className="pl-button pl-button-secondary" onClick={() => setSelectedAction(null)} type="button">Tutup</button></div>
+          )}
+        </section>
+      ) : null}
 
       <section className="pl-main-grid">
         <div>
@@ -443,13 +551,22 @@ export function ReturningUserHome({
                 <div><span className="pl-match-percent">{score}</span><span>{reason}</span></div>
                 <h3>{title}</h3><p>{org}</p>
                 <div className="pl-tag-row"><span className="pl-tag">Data pipeline</span><span className="pl-tag">Climate</span></div>
-                <div className="pl-card-actions"><Anchor href="/matches/aqua-maya" className="pl-text-action">Lihat alasan</Anchor><button onClick={onHideRecommendation} type="button">Sembunyikan</button></div>
+                <div className="pl-card-actions"><Anchor href="/matches/aqua-maya" className="pl-text-action">Lihat alasan</Anchor><button onClick={() => {
+                  const nextSaved = savedMatches.includes(title) ? savedMatches.filter((value) => value !== title) : [...savedMatches, title];
+                  setSavedMatches(nextSaved);
+                  sessionStorage.setItem("projectlink-saved-matches", JSON.stringify(nextSaved));
+                }} type="button">{savedMatches.includes(title) ? "Tersimpan ✓" : "Simpan"}</button><button onClick={() => {
+                  const nextCount = rejectionCount + 1;
+                  setRejectionCount(nextCount);
+                  sessionStorage.setItem("projectlink-rejection-count", String(nextCount));
+                  onHideRecommendation?.();
+                }} type="button">Tidak relevan</button></div>
               </article>
             ))}
           </div>
         </section>
       ) : (
-        <button className="pl-restore-recommendation" onClick={onHideRecommendation} type="button">Tampilkan kembali rekomendasi yang disembunyikan</button>
+        <div className="pl-rejection-recovery"><p>Rekomendasi disembunyikan dan feedback diterapkan.</p>{rejectionCount >= 2 ? <p><strong>Kami mengurangi rekomendasi serupa.</strong> Anda dapat menyesuaikan preferensi atau menggunakan pencarian langsung.</p> : null}<button className="pl-restore-recommendation" onClick={onHideRecommendation} type="button">Urungkan</button></div>
       )}
 
       <section className="pl-lower-grid pl-section">
@@ -472,6 +589,7 @@ export function ReturningUserHome({
         <aside>
           <SectionTitle title="Aktivitas terbaru" />
           <div className="pl-timeline">
+            {activities.map((activity, index) => <div key={`${activity}-${index}`}><i /><span><strong>{activity}</strong><small>Baru saja · tersimpan di sesi</small></span></div>)}
             <div><i /><span><strong>Evidence diverifikasi</strong><small>Pipeline AquaLoop · 2 jam lalu</small></span></div>
             <div><i /><span><strong>Raka menambahkan catatan</strong><small>Workspace proyek · Kemarin</small></span></div>
             <div><i /><span><strong>Profil muncul di pencarian</strong><small>4 kali dalam 7 hari</small></span></div>
@@ -502,9 +620,9 @@ export function OrganizationHome() {
 
       <section className="pl-org-action-grid">
         {[
-          ["3", "Aplikasi baru", "Perlu ditinjau minggu ini", "Navy", "/organization/nexa-research-lab/shortlist"],
+          ["3", "Aplikasi baru", "Perlu ditinjau minggu ini", "Navy", "/organization/nexa-research-lab/shortlists"],
           ["1", "Persetujuan", "Offer menunggu owner", "Blue", "/organization/nexa-research-lab/pipeline"],
-          ["2", "Shortlist aktif", "Dibagikan ke 4 anggota", "Teal", "/organization/nexa-research-lab/shortlist"],
+          ["2", "Shortlist aktif", "Dibagikan ke 4 anggota", "Teal", "/organization/nexa-research-lab/shortlists"],
           ["1", "Role belum siap", "Batasi akses sebelum mulai", "Soft", "/organization/nexa-research-lab/members"],
         ].map(([value, label, text, tone, href]) => (
           <a className={`pl-org-action ${tone.toLowerCase()}`} href={href} key={label}>
@@ -535,7 +653,7 @@ export function OrganizationHome() {
           <div className="pl-shortlisted">
             <span className="pl-avatar">RA</span><div><strong>Rafi Akbar</strong><small>86% match · Contacted</small></div>
           </div>
-          <Anchor href="/organization/nexa-research-lab/shortlist" className="pl-text-action">Kelola shortlist</Anchor>
+          <Anchor href="/organization/nexa-research-lab/shortlists" className="pl-text-action">Kelola shortlist</Anchor>
         </aside>
       </section>
 
@@ -555,6 +673,7 @@ export function OrganizationHome() {
           <p>Pencarian tidak berhenti pada jabatan atau kata kunci keahlian.</p>
         </div>
         <form action="/organization/nexa-research-lab/search">
+          <input name="scope" type="hidden" value="talent" />
           <label>
             <span className="sr-only">Masalah yang ingin diselesaikan</span>
             <input name="q" placeholder="Contoh: validasi data sensor suhu perkotaan" />

@@ -23,6 +23,12 @@ import {
   OrganizationHome,
   ReturningUserHome,
 } from "./product-homepages";
+import {
+  ContextualSearchExperience,
+  OrganizationWorkspaceExperience,
+  PublicEntityExperience,
+} from "./product-experiences";
+import type { SearchScope } from "@/dummy/registry";
 
 type Persona = "guest" | "new" | "returning" | "organization";
 type SimulatedState = "normal" | "loading" | "empty" | "error";
@@ -837,7 +843,21 @@ function AuthPage({
   const hasError = searchParams.get("state") === "error";
   const submit = () => {
     updateDemo({ persona: "new" });
-    if (returnTo) router.push(returnTo);
+    const safeReturn =
+      returnTo &&
+      returnTo.startsWith("/") &&
+      !returnTo.startsWith("//") &&
+      ["/search", "/projects/", "/profiles/", "/organizations/", "/opportunities/", "/home", "/collaboration"].some(
+        (prefix) => returnTo === prefix || returnTo.startsWith(prefix),
+      )
+        ? returnTo
+        : null;
+    if (safeReturn && action === "save-search") {
+      const saved = JSON.parse(sessionStorage.getItem("projectlink-saved-searches") ?? "[]") as string[];
+      sessionStorage.setItem("projectlink-saved-searches", JSON.stringify(Array.from(new Set([...saved, safeReturn]))));
+      const separator = safeReturn.includes("?") ? "&" : "?";
+      router.push(`${safeReturn}${separator}saved=1`);
+    } else if (safeReturn) router.push(safeReturn);
     else router.push(mode === "register" ? "/onboarding/goals" : "/home");
   };
 
@@ -1678,6 +1698,20 @@ function NotFoundPage() {
   );
 }
 
+function CompatibilityRoutePage({ canonical }: { canonical: string }) {
+  useEffect(() => {
+    window.location.replace(canonical);
+  }, [canonical]);
+  return (
+    <div className="simulated-state loading">
+      <div className="skeleton-block" />
+      <h2>Membuka route canonical…</h2>
+      <p>Compatibility route ini tidak menduplikasi konten.</p>
+      <ActionLink href={canonical} variant="primary">Lanjutkan</ActionLink>
+    </div>
+  );
+}
+
 function PrototypeControls({
   demo,
   updateDemo,
@@ -1757,10 +1791,29 @@ function PrototypeControls({
         </div>
       </div>
       <div className="prototype-reset-row">
-        <button onClick={() => setSimulatedState("normal")} type="button">Reset override</button>
+        <button onClick={() => {
+          setSimulatedState("normal");
+          updateDemo({ previewWidth: "fluid" });
+          const params = new URLSearchParams(window.location.search);
+          params.delete("prototypeState");
+          const query = params.toString();
+          window.location.assign(query ? `${window.location.pathname}?${query}` : window.location.pathname);
+        }} type="button">Reset override</button>
         <button
           onClick={() => {
+            if (!window.confirm("Hapus seluruh dummy session prototype? Draft, saved items, shortlist, dan action state akan kembali ke awal.")) return;
             sessionStorage.removeItem("projectlink-demo");
+            [
+              "projectlink-goal-drafts",
+              "projectlink-first-value",
+              "projectlink-completed-actions",
+              "projectlink-activity",
+              "projectlink-rejection-count",
+              "projectlink-saved-matches",
+              "projectlink-saved-items",
+              "projectlink-saved-searches",
+              "projectlink-org-state",
+            ].forEach((key) => sessionStorage.removeItem(key));
             setSimulatedState("normal");
             updateDemo(defaultDemo);
             window.location.assign("/");
@@ -1825,7 +1878,7 @@ function AppShell({
     ? [
         ["/organization/nexa-research-lab", "Beranda"],
         ["/organization/nexa-research-lab/projects", "Proyek"],
-        ["/organization/nexa-research-lab/search", "Pencarian"],
+        ["/organization/nexa-research-lab/search?scope=talent", "Pencarian"],
         ["/organization/nexa-research-lab/pipeline", "Pipeline"],
         ["/organization/nexa-research-lab/members", "Anggota"],
       ]
@@ -1914,8 +1967,8 @@ function AppShell({
               : nav.map(([href, label]) => (
                   <Link
                     className={
-                      pathname === href ||
-                      (href !== "/" && pathname.startsWith(`${href}/`))
+                      pathname === href.split("?")[0] ||
+                      (href.split("?")[0] !== "/" && pathname.startsWith(`${href.split("?")[0]}/`))
                         ? "active"
                         : ""
                     }
@@ -2015,10 +2068,17 @@ export function PrototypeApp() {
     if (pathname === "/design-system") return <DesignSystemPreview />;
     if (pathname === "/about") return <PrototypeMapPage />;
     if (pathname === "/explore") return <ExplorePage demo={demo} updateDemo={updateDemo} />;
-    if (pathname === "/search") return <SearchPage scope={searchScope} />;
-    if (pathname === "/projects/aqua-loop") return <PublicProjectPage limited={false} demo={demo} updateDemo={updateDemo} router={router} />;
+    if (pathname === "/search") return <ContextualSearchExperience initialScope={searchScope as SearchScope | undefined} />;
+    if (pathname === "/projects/aqua-loop") return <PublicEntityExperience scope="projects" slug="aqua-loop" />;
+    if (pathname === "/projects/industrial-motor-monitoring") return <PublicEntityExperience scope="projects" slug="industrial-motor-monitoring" />;
+    if (pathname === "/projects/smart-cooling") return <PublicEntityExperience scope="projects" slug="smart-cooling" />;
+    if (pathname === "/projects/confidential-water-system") return <PublicProjectPage limited demo={demo} updateDemo={updateDemo} router={router} />;
     if (pathname === "/projects/cooling-preview") return <PublicProjectPage limited demo={demo} updateDemo={updateDemo} router={router} />;
-    if (pathname === "/profiles/maya") return <PublicProfilePage demo={demo} router={router} />;
+    if (pathname.startsWith("/profiles/")) {
+      const slug = pathname.split("/").pop() ?? "";
+      return <PublicEntityExperience scope="people" slug={slug === "maya" ? "maya-pradipta" : slug} />;
+    }
+    if (pathname.startsWith("/organizations/")) return <PublicEntityExperience scope="organizations" slug={pathname.split("/").pop() ?? ""} />;
     if (pathname === "/pricing") return <PricingPage />;
     if (pathname === "/login") return <AuthPage mode="login" searchParams={searchParams} updateDemo={updateDemo} router={router} />;
     if (pathname === "/register") return <AuthPage mode="register" searchParams={searchParams} updateDemo={updateDemo} router={router} />;
@@ -2053,17 +2113,17 @@ export function PrototypeApp() {
       const section = pathname.replace("/org/nusantara", "").replace(/^\//, "");
       return <OrganizationPage section={section} demo={demo} updateDemo={updateDemo} />;
     }
-    if (pathname === "/org/nexa-research-lab") return <OrganizationHome />;
+    if (pathname === "/org/nexa-research-lab") return <CompatibilityRoutePage canonical="/organization/nexa-research-lab" />;
+    if (pathname === "/org/nexa-research-lab/projects") return <CompatibilityRoutePage canonical="/organization/nexa-research-lab/projects" />;
     if (pathname.startsWith("/organization/nexa-research-lab")) {
       const section = pathname.replace("/organization/nexa-research-lab", "").replace(/^\//, "");
-      return section ? (
-        <OrganizationPage section={section} demo={demo} updateDemo={updateDemo} />
-      ) : (
-        <OrganizationHome />
-      );
+      return section ? <OrganizationWorkspaceExperience section={section} /> : <OrganizationHome />;
     }
     if (pathname === "/prototype-map") return <PrototypeMapPage />;
-    if (pathname.startsWith("/opportunities/")) return <PublicProjectPage limited={false} demo={demo} updateDemo={updateDemo} router={router} />;
+    if (pathname.startsWith("/opportunities/")) {
+      const slug = pathname.split("/").pop() ?? "";
+      return <PublicEntityExperience scope="opportunities" slug={slug === "urban-heat" ? "urban-heat-mapping" : slug} />;
+    }
     return <NotFoundPage />;
   }, [demo, hydrated, pathname, prototypeState, router, searchParams, searchScope, updateDemo]);
 

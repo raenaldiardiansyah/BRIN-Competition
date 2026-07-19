@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 import "@/styles/product-shell.css";
+import "@/styles/product-experiences.css";
 
 export const metadata: Metadata = {
   title: "ProjectLink — Proyek yang Membuktikan Kompetensi",
