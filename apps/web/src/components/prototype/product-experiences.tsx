@@ -245,7 +245,7 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
         <div className="px-save-banner"><CheckCircle size={19} weight="fill" /> Pencarian tersimpan. Query dan filter tetap sama setelah autentikasi.</div>
       ) : null}
 
-      <form className="px-search-command" action="/search" method="get">
+      <form className="px-search-command px-public-search-command" action="/search" method="get">
         <label>
           <span>Scope</span>
           <select value={scope} onChange={(event) => changeScope(event.target.value as SearchScope)}>
@@ -257,7 +257,9 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
           <span>Kata kunci</span>
           <span><MagnifyingGlass size={20} /><input defaultValue={q} name="q" placeholder={activeConfig.queryPlaceholder} /></span>
         </label>
-        <button className="pl-button pl-button-primary" type="submit">Cari</button>
+        <button className="pl-button pl-button-primary" type="submit" aria-label="Cari">
+          <MagnifyingGlass size={23} weight="bold" aria-hidden="true" />
+        </button>
       </form>
 
       <div className="px-active-filter-row">
