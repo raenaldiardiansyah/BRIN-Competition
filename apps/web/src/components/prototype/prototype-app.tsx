@@ -1910,7 +1910,7 @@ function AppShell({
           <span><strong>ProjectLink</strong><small>Jaringan inovasi berbasis bukti</small></span>
         </Link>
         {contextualSearch && searchScope ? (
-          <div className="contextual-search" aria-label={`Pencarian ${contextualSearch.label}`}>
+          <>
             <Link className="search-back" href="/explore" aria-label="Kembali ke navigasi utama">←</Link>
             <label className="search-category">
               <span className="nav-icon"><NavIcon label={contextualSearch.label} scope={searchScope} /></span>
@@ -1926,7 +1926,12 @@ function AppShell({
                 ))}
               </select>
             </label>
-            <form className="navbar-search-form" action="/search" method="get">
+            <form
+              className="navbar-search-form"
+              action="/search"
+              method="get"
+              aria-label={`Pencarian ${contextualSearch.label}`}
+            >
               <input type="hidden" name="scope" value={searchScope} />
               <label className="navbar-search-input">
                 <span className="sr-only">Kata kunci pencarian</span>
@@ -1936,18 +1941,20 @@ function AppShell({
                   placeholder={contextualSearch.placeholder}
                 />
               </label>
-              {contextualSearch.filters.map((filter) => (
-                <label className="navbar-filter" key={filter}>
-                  <span className="sr-only">{filter}</span>
-                  <select name={filter.toLowerCase()}>
-                    <option value="">{filter}</option>
-                    <option value="all">All {filter.toLowerCase()}</option>
-                  </select>
-                </label>
-              ))}
+              <div className="navbar-filter-row">
+                {contextualSearch.filters.map((filter) => (
+                  <label className="navbar-filter" key={filter}>
+                    <span className="sr-only">{filter}</span>
+                    <select name={filter.toLowerCase()}>
+                      <option value="">{filter}</option>
+                      <option value="all">All {filter.toLowerCase()}</option>
+                    </select>
+                  </label>
+                ))}
+              </div>
               <button className="navbar-search-button" type="submit" aria-label="Jalankan pencarian">⌕</button>
             </form>
-          </div>
+          </>
         ) : (
           <nav className="primary-nav" aria-label="Navigasi utama">
             {isPublic
