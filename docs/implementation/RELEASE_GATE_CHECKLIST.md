@@ -1,7 +1,7 @@
 # Release Gate Checklist
 
 **Outcome:** **PASS — Chromium Prototype Scope**
-**Checkpoint:** Final Validation Checkpoint
+**Checkpoint:** Final Validation Checkpoint — CLOSED
 
 ## Required gate
 
@@ -11,9 +11,9 @@
 - [x] All canonical core routes generated static HTML.
 - [x] Documented compatibility routes generated static HTML.
 - [x] Unknown legacy slug is not statically generated.
-- [x] Core nested routes survive direct navigation and refresh.
+- [x] Core nested routes survive direct navigation and refresh on the local application server.
 - [x] Four core journeys are usable.
-- [x] No dead primary CTA found in the audited routes.
+- [x] No dead primary CTA found in the audited core and supporting routes.
 - [x] Search URL, refresh, back, and forward state work.
 - [x] Login return context works and rejects open-ended route behavior.
 - [x] Session mutations persist for the browser session.
@@ -30,6 +30,9 @@
 - [x] Standalone Chrome/Edge evidence exists.
 - [x] In-app Chromium is supporting evidence only.
 - [x] Known limitations are documented.
+- [ ] Full exhaustive link crawl across all 64 exports — not performed; not a prototype gate.
+- [ ] Reduced-motion-specific validation — not performed; documented limitation.
+- [ ] Production static-host clean-URL refresh — not assessed; deployment is outside scope.
 
 ## Outcome rules
 
@@ -53,4 +56,6 @@ console error that breaks a core journey.
 ## Gate decision
 
 No blocking condition was observed. Deferred browser and assistive-technology
-coverage does not change the approved prototype-scope label.
+coverage does not change the approved prototype-scope label. The unchecked
+items are explicitly outside the Chromium prototype release gate and prevent
+claims of deployment or cross-browser production readiness.

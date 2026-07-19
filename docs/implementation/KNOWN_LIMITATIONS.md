@@ -21,7 +21,21 @@ before a production accessibility claim.
 The export uses flat `.html` files because `trailingSlash` is not configured.
 The hosting layer must map clean nested URLs to those generated files and map
 unknown paths to `404.html`. Runtime redirects and rewrites are intentionally
-not used.
+not used. Generated route files were verified, but clean-URL refresh on the
+final production static-host configuration was not tested. Browser walkthroughs
+used the local application server rather than a production-equivalent server
+serving `out/`.
+
+## Reduced motion
+
+Reduced-motion CSS handling exists in the prototype styles, but a dedicated
+`prefers-reduced-motion` behavioral validation was not performed. It must not
+be reported as PASS until tested with the preference enabled.
+
+## Link coverage
+
+Primary CTA checks passed on the audited core and supporting routes. A full
+exhaustive crawl of every link across all 64 exported pages was not performed.
 
 ## Prototype persistence
 
@@ -41,6 +55,8 @@ standalone Chromium device metrics.
 This milestone did not add production authentication, backend data,
 permissions enforcement, payments, real collaboration messaging, deployment,
 or new product personas. The result remains a high-fidelity static prototype.
+The prototype has not been deployed or tested in a production hosting
+environment, so deployment readiness is not assessed.
 
 ## Accepted limitation record
 

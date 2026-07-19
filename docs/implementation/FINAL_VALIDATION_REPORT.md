@@ -5,6 +5,15 @@
 **Workspace:** `D:\Downloads\TELKOM\BRIN`
 **Release status:** **PASS — Chromium Prototype Scope**
 
+```text
+Implementation: COMPLETE
+Core validation: PASS
+Documentation: COMPLETE
+Final Validation Checkpoint: CLOSED
+Deployment readiness: NOT ASSESSED
+Cross-browser production readiness: NOT CLAIMED
+```
+
 ## Commands and build
 
 | Check | Actual command | Result |
@@ -13,6 +22,7 @@
 | Static export | `pnpm --filter @projectlink/web run build` | PASS |
 | Chrome gate | `node --experimental-websocket scripts/validate-chromium.mjs` | PASS |
 | Edge gate | Same runner with Edge executable argument | PASS |
+| Diff whitespace check | `git diff --check` | PASS |
 
 Next.js `16.2.10` generated **64 static pages**. The project uses App Router,
 `output: "export"`, unoptimized images, default `out/`, and no configured
@@ -48,6 +58,10 @@ The in-app browser was not used as the only evidence.
   `/organization/nexa-research-lab/projects`.
 - First Tab target is the skip link.
 - No runtime exception or console error was captured.
+- Primary CTA audit on the audited core and supporting routes passed.
+
+A full exhaustive crawl of every link across all 64 exported pages was not
+performed. The CTA result must not be interpreted as an all-link crawl.
 
 ## Static export evidence
 
@@ -68,6 +82,12 @@ out/404.html
 `out/org/slug-tidak-dikenal.html` is not generated. Unknown legacy slugs
 therefore resolve through the static host's 404 behavior rather than an
 open-ended organization fallback.
+
+Static route files were verified in the generated output. Direct nested-route
+navigation and refresh were exercised through the local application server.
+Clean-URL refresh behavior on the final production static-hosting
+configuration was not tested because a production-equivalent server serving
+`out/` was outside this milestone. Deployment readiness is not assessed.
 
 ## Core journey outcome
 
@@ -98,4 +118,6 @@ open-ended organization fallback.
 ## Scope label
 
 This result is deliberately **not** labeled cross-browser production ready.
-Firefox was unavailable and Safari/iOS WebKit is deferred.
+Firefox was unavailable and Safari/iOS WebKit is deferred. Reduced-motion
+behavior, exhaustive all-link crawling, and production static-host routing
+remain outside the validated scope.
