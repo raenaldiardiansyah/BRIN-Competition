@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+dist
+apps/*/.next
+apps/*/out
+apps/*/dist
+.env
+.env.local
+.env.*.local
+*.log
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+.DS_Store
+
+# Private product and UX documentation — keep local only
+docs/

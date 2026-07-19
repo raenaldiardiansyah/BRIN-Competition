@@ -1,0 +1,14 @@
+{
+  "name": "projectlink-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "scripts": {
+    "dev": "pnpm --filter @projectlink/web dev",
+    "dev:web": "pnpm --filter @projectlink/web dev",
+    "dev:api": "pnpm --filter @projectlink/api dev",
+    "build": "pnpm --filter @projectlink/web build && node scripts/prepare-sites-dist.mjs",
+    "build:api": "pnpm --filter @projectlink/api build",
+    "typecheck": "pnpm --recursive --if-present typecheck"
+  }
+}
