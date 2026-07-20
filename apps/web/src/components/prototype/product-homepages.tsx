@@ -24,6 +24,9 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { announce } from "./accessibility";
+import ProjectLinkFolder from "../ui/projectlink-folder/ProjectLinkFolder";
+
+type FolderId = "project" | "contribution" | "evidence" | "matching" | "collaboration";
 
 type HomeProps = {
   onFirstValue?: () => void;
@@ -113,6 +116,220 @@ function ProjectPreview({
 }
 
 export function GuestHome() {
+  const [activeFolder, setActiveFolder] = useState<FolderId | null>(null);
+  const [selectedMobileFolder, setSelectedMobileFolder] = useState<FolderId>("project");
+  const [currentPaperIndex, setCurrentPaperIndex] = useState<number>(2);
+  const [inspectorPaperIndex, setInspectorPaperIndex] = useState<number>(2);
+  const [isFolderComplete, setIsFolderComplete] = useState<boolean>(false);
+  const [isPaperExpanded, setIsPaperExpanded] = useState<boolean>(false);
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+
+  const inspectorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearFolderTimers = () => {
+    if (inspectorTimerRef.current) {
+      clearTimeout(inspectorTimerRef.current);
+      inspectorTimerRef.current = null;
+    }
+    if (autoCloseTimerRef.current) {
+      clearTimeout(autoCloseTimerRef.current);
+      autoCloseTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => clearFolderTimers();
+  }, []);
+
+  const resetFolderState = (nextFolder: FolderId | null) => {
+    clearFolderTimers();
+    setActiveFolder(nextFolder);
+    setCurrentPaperIndex(2);
+    setInspectorPaperIndex(2);
+    setIsFolderComplete(false);
+    setIsPaperExpanded(false);
+    setIsTransitioning(false);
+  };
+
+  const handleFolderToggle = (folderId: FolderId, open: boolean) => {
+    if (open) {
+      resetFolderState(folderId);
+    } else {
+      resetFolderState(null);
+    }
+  };
+
+  const handleMobileFolderSelect = (folderId: FolderId) => {
+    setSelectedMobileFolder(folderId);
+    resetFolderState(null);
+  };
+
+  const handlePaperClick = (index: number) => {
+    if (!isFolderComplete) {
+      clearFolderTimers();
+      setIsPaperExpanded(true);
+      setCurrentPaperIndex(index);
+      setInspectorPaperIndex(index);
+      setIsTransitioning(false);
+    }
+  };
+
+  const handleCloseExpanded = () => {
+    setIsPaperExpanded(false);
+    setCurrentPaperIndex(2);
+    setInspectorPaperIndex(2);
+  };
+
+  const handleNextPaper = () => {
+    if (currentPaperIndex > 0) {
+      const nextIndex = currentPaperIndex - 1;
+      setIsTransitioning(true);
+      setCurrentPaperIndex(nextIndex);
+      if (inspectorTimerRef.current) {
+        clearTimeout(inspectorTimerRef.current);
+      }
+      inspectorTimerRef.current = setTimeout(() => {
+        setInspectorPaperIndex(nextIndex);
+        setIsTransitioning(false);
+      }, 250);
+    } else {
+      setCurrentPaperIndex(-1);
+      setIsFolderComplete(true);
+      clearFolderTimers();
+      autoCloseTimerRef.current = setTimeout(() => {
+        resetFolderState(null);
+      }, 1500);
+    }
+  };
+
+  const folders = [
+    {
+      id: "project" as FolderId,
+      label: "Project",
+      ariaLabel: "Buka folder Project",
+      color: "#315FEE",
+      colorEnd: "#2450D8",
+      colorBack: "#1F46C7",
+      shadowColor: "rgba(36, 80, 216, 0.22)",
+      items: [
+        <strong key="p1">Problem Brief</strong>,
+        <strong key="p2">Readiness</strong>,
+        <strong key="p3">Open Need</strong>,
+      ]
+    },
+    {
+      id: "contribution" as FolderId,
+      label: "Contribution",
+      ariaLabel: "Buka folder Contribution",
+      color: "#4DA6DF",
+      colorEnd: "#318ED0",
+      colorBack: "#287CB9",
+      shadowColor: "rgba(49, 142, 208, 0.22)",
+      items: [
+        <strong key="c1">Role</strong>,
+        <strong key="c2">Responsibility</strong>,
+        <strong key="c3">Output</strong>,
+      ]
+    },
+    {
+      id: "evidence" as FolderId,
+      label: "Evidence",
+      ariaLabel: "Buka folder Evidence",
+      color: "#58C7AA",
+      colorEnd: "#36AE91",
+      colorBack: "#2A957D",
+      shadowColor: "rgba(54, 174, 145, 0.22)",
+      items: [
+        <strong key="e1">Repository</strong>,
+        <strong key="e2">Test Report</strong>,
+        <strong key="e3">Project Doc</strong>,
+      ]
+    },
+    {
+      id: "matching" as FolderId,
+      label: "Matching",
+      ariaLabel: "Buka folder Matching",
+      color: "#5548E8",
+      colorEnd: "#4136C7",
+      colorBack: "#352BAF",
+      shadowColor: "rgba(65, 54, 199, 0.22)",
+      items: [
+        <strong key="m1">Primary Reason</strong>,
+        <strong key="m2">Evidence Signal</strong>,
+        <strong key="m3">Gap & Confidence</strong>,
+      ]
+    },
+    {
+      id: "collaboration" as FolderId,
+      label: "Collaboration",
+      ariaLabel: "Buka folder Collaboration",
+      color: "#4EB5EB",
+      colorEnd: "#309BD7",
+      colorBack: "#2786BD",
+      shadowColor: "rgba(48, 155, 215, 0.22)",
+      items: [
+        <strong key="co1">Request</strong>,
+        <strong key="co2">Next Step</strong>,
+        <strong key="co3">Current Stage</strong>,
+      ]
+    }
+  ];
+
+  const paperContents: Record<FolderId, Array<{ title: string; desc: string }>> = {
+    project: [
+      { title: "Problem Brief", desc: "Menjelaskan masalah utama dan konteks yang sedang diselesaikan proyek." },
+      { title: "Readiness", desc: "Menunjukkan kesiapan proyek untuk diuji, dikembangkan, atau dikolaborasikan." },
+      { title: "Open Need", desc: "Menunjukkan peran atau kontribusi yang sedang dibutuhkan proyek." },
+    ],
+    contribution: [
+      { title: "Role", desc: "Menjelaskan posisi dan fungsi seseorang di dalam proyek." },
+      { title: "Responsibility", desc: "Menunjukkan tanggung jawab yang benar-benar dikerjakan." },
+      { title: "Output", desc: "Menampilkan hasil kerja nyata dari kontribusi tersebut." },
+    ],
+    evidence: [
+      { title: "Project Document", desc: "Memuat konteks, keputusan, dan perkembangan penting proyek." },
+      { title: "Test Report", desc: "Menunjukkan hasil pengujian yang dapat digunakan untuk memvalidasi pekerjaan." },
+      { title: "Repository", desc: "Menyediakan implementasi teknis yang dapat diperiksa secara langsung." },
+    ],
+    matching: [
+      { title: "Primary Reason", desc: "Menjelaskan alasan utama sebuah rekomendasi ditampilkan." },
+      { title: "Evidence Signal", desc: "Menunjukkan bukti yang mendukung kecocokan tersebut." },
+      { title: "Gap & Confidence", desc: "Menampilkan celah dan tingkat keyakinan sistem secara terbuka." },
+    ],
+    collaboration: [
+      { title: "Request", desc: "Menyampaikan kebutuhan kolaborasi dengan konteks yang jelas." },
+      { title: "Next Step", desc: "Menunjukkan tindakan berikutnya bagi kedua pihak." },
+      { title: "Current Stage", desc: "Memperlihatkan posisi proses kolaborasi saat ini." },
+    ],
+  };
+
+  const completedLabels: Record<FolderId, string> = {
+    project: "3/3 konteks ditinjau ✓",
+    contribution: "3/3 detail ditinjau ✓",
+    evidence: "3/3 bukti ditinjau ✓",
+    matching: "3/3 sinyal ditinjau ✓",
+    collaboration: "3/3 langkah ditinjau ✓",
+  };
+
+  const completedMessages: Record<FolderId, string> = {
+    project: "3/3 konteks telah ditinjau ✓",
+    contribution: "3/3 detail telah ditinjau ✓",
+    evidence: "3/3 bukti telah ditinjau ✓",
+    matching: "3/3 sinyal telah ditinjau ✓",
+    collaboration: "3/3 langkah telah ditinjau ✓",
+  };
+
+  const getFolderLabel = (folder: typeof folders[0]) => {
+    if (activeFolder === folder.id && isFolderComplete) {
+      return completedLabels[folder.id];
+    }
+    return folder.label;
+  };
+
+  const activePaperInfo = activeFolder && currentPaperIndex >= 0 ? paperContents[activeFolder][inspectorPaperIndex] : null;
+  const indexLabel = currentPaperIndex === 2 ? "1 / 3" : currentPaperIndex === 1 ? "2 / 3" : "3 / 3";
+
   const goals = [
     {
       icon: <Compass size={25} weight="duotone" />,
@@ -142,42 +359,236 @@ export function GuestHome() {
 
   return (
     <div className="pl-home pl-guest-home">
-      <section className="pl-hero">
-        <div className="pl-hero-copy">
-          <span className="pl-kicker"><Sparkle size={16} weight="fill" /> Jaringan inovasi berbasis bukti</span>
-          <h1>Temukan orang dan proyek yang tepat untuk membuat dampak nyata.</h1>
+      <section className="pl-editorial-hero">
+        <div className="pl-hero-content">
+          <span className="pl-eyebrow">Project • Contribution • Evidence • Matching • Collaboration</span>
+          <h1>Bangun identitas profesional dari pekerjaan nyata.</h1>
           <p>
-            ProjectLink menghubungkan kebutuhan proyek, kontribusi terverifikasi,
-            dan alasan kecocokan dalam satu ruang kolaborasi.
+            ProjectLink menghubungkan kebutuhan proyek, kontribusi terverifikasi, dan alasan kecocokan dalam satu ruang kolaborasi.
           </p>
           <div className="pl-button-row">
-            <Anchor href="/explore" className="pl-button pl-button-primary">
-              Jelajahi sekarang <ArrowRight size={18} weight="bold" />
-            </Anchor>
-            <Anchor href="/register">Bangun profil proyek</Anchor>
-          </div>
-          <div className="pl-trust-line">
-            <span><CheckCircle size={17} weight="fill" /> Evidence yang dapat diperiksa</span>
-            <span><CheckCircle size={17} weight="fill" /> Matching yang dapat dijelaskan</span>
+            <Anchor href="/explore" className="pl-button pl-button-primary">Jelajahi proyek</Anchor>
+            <Anchor href="/register" className="pl-button pl-button-secondary">Mulai kolaborasi</Anchor>
           </div>
         </div>
-        <div className="pl-hero-graphic" aria-label="Alur ProjectLink dari proyek menuju kolaborasi">
-          <div className="pl-graphic-card card-a">
-            <FolderOpen size={30} weight="duotone" />
-            <strong>Proyek</strong>
-            <span>Kebutuhan yang jelas</span>
+
+        {/* Desktop floating folder stage */}
+        <div className="pl-folder-stage pl-folder-stage--desktop">
+          <div className={`pl-folder-stage__cluster ${isPaperExpanded ? "pl-folder-stage__cluster--dimmed" : ""}`}>
+            {folders.map(folder => {
+              const isActive = activeFolder === folder.id;
+              return (
+                <div
+                  key={folder.id}
+                  className={`pl-floating-folder pl-floating-folder--${folder.id} ${
+                    isActive ? "pl-floating-folder--active" : ""
+                  }`}
+                >
+                  <div className="pl-floating-folder__visual">
+                    <ProjectLinkFolder
+                      color={folder.color}
+                      colorEnd={folder.colorEnd}
+                      colorBack={folder.colorBack}
+                      shadowColor={folder.shadowColor}
+                      open={isActive}
+                      onOpenChange={open => handleFolderToggle(folder.id, open)}
+                      label={folder.ariaLabel}
+                      items={folder.items}
+                      currentPaperIndex={isActive ? currentPaperIndex : 2}
+                      onPaperClick={handlePaperClick}
+                    />
+                    <span className="pl-floating-folder__label">
+                      {getFolderLabel(folder)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="pl-graphic-card card-b">
-            <Medal size={30} weight="duotone" />
-            <strong>Evidence</strong>
-            <span>Kontribusi terukur</span>
+
+          {/* Central Expanded Paper Layer */}
+          {isPaperExpanded && activeFolder && (
+            <>
+              <div className="pl-expanded-paper-overlay" />
+              <div className="pl-expanded-paper" aria-live="polite">
+                <div className="pl-expanded-paper__header">
+                  <span className="pl-expanded-paper__badge">
+                    {isFolderComplete ? "Selesai" : activeFolder.toUpperCase()}
+                  </span>
+                  {!isFolderComplete && (
+                    <span className="pl-expanded-paper__index">{indexLabel}</span>
+                  )}
+                </div>
+
+                <div className={`pl-expanded-paper__content ${isTransitioning ? "pl-expanded-paper__content--leaving" : "pl-expanded-paper__content--entering"}`}>
+                  <div className="pl-expanded-paper__body">
+                    {isFolderComplete ? (
+                      <>
+                        <h3>Tinjauan Selesai</h3>
+                        <p>{completedMessages[activeFolder]}</p>
+                      </>
+                    ) : (
+                      activePaperInfo && (
+                        <>
+                          <h3>{activePaperInfo.title}</h3>
+                          <p>{activePaperInfo.desc}</p>
+                        </>
+                      )
+                    )}
+                  </div>
+                </div>
+
+                <div className="pl-expanded-paper__actions">
+                  <button
+                    className="pl-button-sm pl-button-secondary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCloseExpanded();
+                    }}
+                  >
+                    Tutup
+                  </button>
+
+                  {isFolderComplete ? (
+                    <button
+                      className="pl-button-sm pl-button-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        resetFolderState(null);
+                      }}
+                    >
+                      Selesai
+                    </button>
+                  ) : (
+                    <button
+                      className="pl-button-sm pl-button-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNextPaper();
+                      }}
+                    >
+                      {currentPaperIndex === 0 ? "Selesai" : "Lanjut →"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Mobile folder stage with horizontal scroll selector */}
+        <div className="pl-folder-stage pl-folder-stage--mobile">
+          <div className="pl-mobile-folder-view">
+            {folders.filter(f => f.id === selectedMobileFolder).map(folder => {
+              const isActive = activeFolder === folder.id;
+              return (
+                <div
+                  key={folder.id}
+                  className={`pl-floating-folder pl-floating-folder--mobile-active ${
+                    isActive ? "pl-floating-folder--active" : ""
+                  }`}
+                >
+                  <div className="pl-floating-folder__visual">
+                    <ProjectLinkFolder
+                      color={folder.color}
+                      colorEnd={folder.colorEnd}
+                      colorBack={folder.colorBack}
+                      shadowColor={folder.shadowColor}
+                      open={isActive}
+                      onOpenChange={open => handleFolderToggle(folder.id, open)}
+                      label={folder.ariaLabel}
+                      items={folder.items}
+                      currentPaperIndex={isActive ? currentPaperIndex : 2}
+                      onPaperClick={handlePaperClick}
+                    />
+                    <span className="pl-floating-folder__label">
+                      {getFolderLabel(folder)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="pl-graphic-card card-c">
-            <Handshake size={30} weight="duotone" />
-            <strong>Kolaborasi</strong>
-            <span>Kecocokan beralasan</span>
+
+          {/* Mobile Expanded Paper */}
+          {isPaperExpanded && activeFolder && (
+            <div className="pl-expanded-paper" aria-live="polite">
+              <div className="pl-expanded-paper__header">
+                <span className="pl-expanded-paper__badge">
+                  {isFolderComplete ? "Selesai" : activeFolder.toUpperCase()}
+                </span>
+                {!isFolderComplete && (
+                  <span className="pl-expanded-paper__index">{indexLabel}</span>
+                )}
+              </div>
+
+              <div className={`pl-expanded-paper__content ${isTransitioning ? "pl-expanded-paper__content--leaving" : "pl-expanded-paper__content--entering"}`}>
+                <div className="pl-expanded-paper__body">
+                  {isFolderComplete ? (
+                    <>
+                      <h3>Tinjauan Selesai</h3>
+                      <p>{completedMessages[activeFolder]}</p>
+                    </>
+                  ) : (
+                    activePaperInfo && (
+                      <>
+                        <h3>{activePaperInfo.title}</h3>
+                        <p>{activePaperInfo.desc}</p>
+                      </>
+                    )
+                  )}
+                </div>
+              </div>
+
+              <div className="pl-expanded-paper__actions">
+                <button
+                  className="pl-button-sm pl-button-secondary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCloseExpanded();
+                  }}
+                >
+                  Tutup
+                </button>
+
+                {isFolderComplete ? (
+                  <button
+                    className="pl-button-sm pl-button-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      resetFolderState(null);
+                    }}
+                  >
+                    Selesai
+                  </button>
+                ) : (
+                  <button
+                    className="pl-button-sm pl-button-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNextPaper();
+                    }}
+                  >
+                    {currentPaperIndex === 0 ? "Selesai" : "Lanjut →"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="pl-mobile-folder-selector" role="tablist" aria-label="Pilih Folder">
+            {folders.map(folder => (
+              <button
+                key={folder.id}
+                role="tab"
+                aria-selected={selectedMobileFolder === folder.id}
+                className={`pl-mobile-folder-btn ${selectedMobileFolder === folder.id ? "active" : ""}`}
+                onClick={() => handleMobileFolderSelect(folder.id)}
+              >
+                {folder.label}
+              </button>
+            ))}
           </div>
-          <div className="pl-graphic-link" />
         </div>
       </section>
 
