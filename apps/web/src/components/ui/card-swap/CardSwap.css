@@ -1,0 +1,67 @@
+.project-card-swap__container {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  transform: translate(5%, 20%);
+  transform-origin: bottom right;
+  perspective: 900px;
+  overflow: visible;
+}
+
+.project-card-swap__card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 16px;
+  border: 1px solid rgba(34, 83, 178, 0.12);
+  background: var(--bg-1, #ffffff);
+  box-shadow: 0 12px 32px rgba(35, 66, 120, 0.08);
+  color: var(--text-dark, #1e293b);
+  transform-style: preserve-3d;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow 0.2s border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.project-card-swap__card:focus-visible {
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.24), 0 12px 32px rgba(35, 66, 120, 0.08);
+}
+
+@media (max-width: 1024px) {
+  .project-card-swap__container {
+    transform: scale(0.8) translate(0, 0);
+  }
+}
+
+@media (max-width: 768px) {
+  .project-card-swap__container {
+    transform: scale(0.75) translate(10%, 10%);
+  }
+}
+
+@media (max-width: 480px) {
+  .project-card-swap__container {
+    transform: scale(0.6) translate(15%, 15%);
+  }
+}
+
+/* Reduced motion styling rules */
+@media (prefers-reduced-motion: reduce) {
+  .project-card-swap__container {
+    perspective: none;
+    transform: none;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    margin: 20px auto;
+  }
+  .project-card-swap__card {
+    transform-style: flat;
+    transition: opacity 0.3s !important;
+  }
+}

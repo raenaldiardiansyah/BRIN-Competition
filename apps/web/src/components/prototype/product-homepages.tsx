@@ -25,8 +25,30 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { announce } from "./accessibility";
 import ProjectLinkFolder from "../ui/projectlink-folder/ProjectLinkFolder";
+import CardSwap, { Card } from "../ui/card-swap/CardSwap";
+import Stepper, { Step } from "../ui/stepper/Stepper";
+import { featuredProjects, FeaturedProject, OpenNeed } from "../../data/guest-homepage-projects";
 
 type FolderId = "project" | "contribution" | "evidence" | "matching" | "collaboration";
+
+type PendingIntent =
+  | {
+      type: 'view-opportunity';
+      projectId: string;
+      opportunityId: string;
+      returnTo: string;
+    }
+  | {
+      type: 'apply-to-opportunity';
+      projectId: string;
+      opportunityId: string;
+      returnTo: string;
+    }
+  | {
+      type: 'create-opportunity';
+      returnTo: '/opportunities/new';
+    };
+
 
 type HomeProps = {
   onFirstValue?: () => void;
@@ -115,7 +137,51 @@ function ProjectPreview({
   );
 }
 
+// Prototype Authentication Hook
+function usePrototypeAuth() {
+  const [user, setUser] = useState<{ name: string; ownedProjects: Array<{ id: string; title: string }> } | null>(null);
+  const [status, setStatus] = useState<'unauthenticated' | 'authenticated'>('unauthenticated');
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('projectlink_prototype_user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+      setStatus('authenticated');
+    }
+  }, []);
+
+  const login = () => {
+    const mockUser = {
+      name: "Taufik Hidayat",
+      ownedProjects: [
+        { id: "user-project-1", title: "Sistem Energi Mandiri Pedesaan" },
+        { id: "user-project-2", title: "Monitoring Microgrid Pintar" }
+      ]
+    };
+    setUser(mockUser);
+    setStatus('authenticated');
+    localStorage.setItem('projectlink_prototype_user', JSON.stringify(mockUser));
+  };
+
+  const logout = () => {
+    setUser(null);
+    setStatus('unauthenticated');
+    localStorage.removeItem('projectlink_prototype_user');
+  };
+
+  return {
+    user,
+    status,
+    isAuthenticated: status === 'authenticated',
+    login,
+    logout
+  };
+}
+
 export function GuestHome() {
+  // Prototype Authentication state
+  const auth = usePrototypeAuth();
+
   const [activeFolder, setActiveFolder] = useState<FolderId | null>(null);
   const [selectedMobileFolder, setSelectedMobileFolder] = useState<FolderId>("project");
   const [currentPaperIndex, setCurrentPaperIndex] = useState<number>(2);
@@ -123,6 +189,17 @@ export function GuestHome() {
   const [isFolderComplete, setIsFolderComplete] = useState<boolean>(false);
   const [isPaperExpanded, setIsPaperExpanded] = useState<boolean>(false);
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false);
+
+  // React Bits homepage components states
+  const [activeFeaturedProjectId, setActiveFeaturedProjectId] = useState(featuredProjects[0].id);
+  const [selectedOpenNeedId, setSelectedOpenNeedId] = useState<string | null>(featuredProjects[0].openNeeds[0]?.id ?? null);
+  const [selectedOwnedProjectId, setSelectedOwnedProjectId] = useState<string | null>(null);
+  const [pendingIntent, setPendingIntent] = useState<PendingIntent | null>(null);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [isOwnedProjectDialogOpen, setIsOwnedProjectDialogOpen] = useState(false);
+
+  // Stepper state
+  const [activeCollaborationStep, setActiveCollaborationStep] = useState(1);
 
   const inspectorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -330,6 +407,63 @@ export function GuestHome() {
   const activePaperInfo = activeFolder && currentPaperIndex >= 0 ? paperContents[activeFolder][inspectorPaperIndex] : null;
   const indexLabel = currentPaperIndex === 2 ? "1 / 3" : currentPaperIndex === 1 ? "2 / 3" : "3 / 3";
 
+  // CardSwap project synchronization handler
+  const handleActiveProjectChange = (originalIndex: number) => {
+    const project = featuredProjects[originalIndex];
+    if (project) {
+      setActiveFeaturedProjectId(project.id);
+      setSelectedOpenNeedId(project.openNeeds[0]?.id ?? null);
+    }
+  };
+
+  const activeProject = featuredProjects.find(p => p.id === activeFeaturedProjectId) || featuredProjects[0];
+  const activeOpenNeed = activeProject.openNeeds.find(n => n.id === selectedOpenNeedId) || activeProject.openNeeds[0];
+
+  // Auth Intent handlers
+  const handleApplyContribution = () => {
+    if (!activeOpenNeed) return;
+
+    if (!auth.isAuthenticated) {
+      setPendingIntent({
+        type: 'apply-to-opportunity',
+        projectId: activeProject.id,
+        opportunityId: activeOpenNeed.id,
+        returnTo: `/opportunities/${activeOpenNeed.id}`
+      });
+      setIsAuthDialogOpen(true);
+    } else {
+      announce(`Mengarahkan ke form pengajuan kontribusi ${activeOpenNeed.title}...`);
+      window.location.href = `/opportunities/${activeOpenNeed.id}/apply`;
+    }
+  };
+
+  const handleCreateOpportunity = () => {
+    if (!auth.isAuthenticated) {
+      setPendingIntent({
+        type: 'create-opportunity',
+        returnTo: '/opportunities/new'
+      });
+      setIsAuthDialogOpen(true);
+    } else {
+      setIsOwnedProjectDialogOpen(true);
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    auth.login();
+    setIsAuthDialogOpen(false);
+
+    if (pendingIntent) {
+      if (pendingIntent.type === 'apply-to-opportunity') {
+        announce(`Login sukses! Melanjutkan ke oportunitas ${pendingIntent.opportunityId}...`);
+        window.location.href = `/opportunities/${pendingIntent.opportunityId}/apply`;
+      } else if (pendingIntent.type === 'create-opportunity') {
+        setIsOwnedProjectDialogOpen(true);
+      }
+      setPendingIntent(null);
+    }
+  };
+
   const goals = [
     {
       icon: <Compass size={25} weight="duotone" />,
@@ -368,7 +502,13 @@ export function GuestHome() {
           </p>
           <div className="pl-button-row">
             <Anchor href="/explore" className="pl-button pl-button-primary">Jelajahi proyek</Anchor>
-            <Anchor href="/register" className="pl-button pl-button-secondary">Mulai kolaborasi</Anchor>
+            <button 
+              type="button" 
+              onClick={handleCreateOpportunity} 
+              className="pl-button pl-button-secondary"
+            >
+              Buka Peluang Kolaborasi
+            </button>
           </div>
         </div>
 
@@ -592,11 +732,12 @@ export function GuestHome() {
         </div>
       </section>
 
-      <section className="pl-section">
+      {/* Goal selector custom section */}
+      <section className="pl-section pl-goal-selector-section">
         <SectionTitle
-          eyebrow="Mulai dari tujuan"
-          title="Apa yang ingin Anda capai?"
-          description="Pilih jalur yang paling dekat dengan kebutuhan Anda hari ini."
+          eyebrow="Tentukan Arah Anda"
+          title="Apa yang ingin Anda lakukan di ProjectLink?"
+          description="Pilih salah satu opsi untuk menyesuaikan alur eksplorasi Anda."
         />
         <div className="pl-goal-grid">
           {goals.map((goal) => (
@@ -610,21 +751,105 @@ export function GuestHome() {
         </div>
       </section>
 
-      <section className="pl-section">
+      {/* Proyek Pilihan with CardSwap split integration */}
+      <section className="pl-section pl-featured-projects-section">
         <SectionTitle
           eyebrow="Proyek pilihan"
           title="Lihat peluang yang sedang bergerak"
           action={<Anchor href="/explore" className="pl-text-action">Lihat semua <ArrowRight size={17} /></Anchor>}
         />
-        <div className="pl-project-grid">
-          <ProjectPreview title="AquaLoop: Pemantauan kualitas air terbuka" organization="BRIN Lab" stage="PILOT" tags={["Data lingkungan", "IoT"]} />
-          <ProjectPreview title="Urban Heat Mapping untuk kota tangguh" organization="Nexa Research Lab" stage="RESEARCH" tags={["Geospatial", "Climate"]} tone="teal" />
-          <ProjectPreview title="Rantai dingin hasil tani berbasis sensor" organization="Agri Nexus" stage="VALIDATION" tags={["Supply chain", "Hardware"]} tone="navy" />
+        
+        <div className="pl-project-split-layout">
+          {/* Left panel: Active Project Details */}
+          <div className="pl-project-split-left" aria-live="polite">
+            <div className="pl-project-detail-card">
+              <div className="pl-project-detail-header">
+                <span className="pl-project-detail-org">{activeProject.organization}</span>
+                <span className={`pl-status pl-status--${activeProject.lifecycle.toLowerCase()}`}>
+                  {activeProject.lifecycle}
+                </span>
+              </div>
+              <h3 className="pl-project-detail-title">{activeProject.title}</h3>
+              
+              <div className="pl-project-detail-field">
+                <strong>Masalah yang diselesaikan:</strong>
+                <p>{activeProject.problem}</p>
+              </div>
+
+              <div className="pl-project-detail-field">
+                <strong>Readiness:</strong>
+                <p>{activeProject.readiness} <small className="pl-readiness-source">({activeProject.readinessSource})</small></p>
+              </div>
+
+              {activeProject.openNeeds && activeProject.openNeeds.length > 0 && (
+                <div className="pl-project-detail-field">
+                  <strong>Kebutuhan Kontribusi:</strong>
+                  <div className="pl-open-needs-selector">
+                    {activeProject.openNeeds.map(need => (
+                      <button
+                        key={need.id}
+                        type="button"
+                        className={`pl-open-need-btn ${selectedOpenNeedId === need.id ? 'active' : ''}`}
+                        onClick={() => setSelectedOpenNeedId(need.id)}
+                      >
+                        {need.title} · <small>{need.commitment}</small>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="pl-project-detail-actions">
+                <Anchor href={`/explore?project=${activeProject.id}`} className="pl-button pl-button-secondary">
+                  Lihat Kebutuhan
+                </Anchor>
+                <button
+                  type="button"
+                  className="pl-button pl-button-primary"
+                  onClick={handleApplyContribution}
+                >
+                  Ajukan Kontribusi
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right panel: React Bits CardSwap Stack */}
+          <div className="pl-project-split-right">
+            <div className="pl-card-swap-stage">
+              <CardSwap
+                width={360}
+                height={260}
+                cardDistance={24}
+                verticalDistance={26}
+                delay={7000}
+                pauseOnHover
+                skewAmount={2}
+                easing="linear"
+                onActiveCardChange={handleActiveProjectChange}
+              >
+                {featuredProjects.map((project, idx) => (
+                  <Card key={project.id} className="project-card-swap__item">
+                    <div className="project-card-swap__item-content">
+                      <div className="project-card-swap__item-hdr">
+                        <span className="project-card-swap__org">{project.organization}</span>
+                        <span className="project-card-swap__lifecycle">{project.lifecycle}</span>
+                      </div>
+                      <h4 className="project-card-swap__title">{project.title}</h4>
+                      <p className="project-card-swap__need">Needs: <strong>{project.openNeeds[0]?.title}</strong></p>
+                      <p className="project-card-swap__reason">{project.recommendationReason}</p>
+                    </div>
+                  </Card>
+                ))}
+              </CardSwap>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="pl-feature-split pl-section">
-        <div className="pl-feature-copy">
+      {/* Contribution-Evidence section (Reactive to selected project) */}
+      <section className="pl-feature-split pl-section pl-contribution-evidence-section">
+        <div className="pl-feature-copy" aria-live="polite">
           <span className="pl-icon-box"><Medal size={26} weight="duotone" /></span>
           <p className="pl-eyebrow">Kontribusi yang terlihat</p>
           <h2>Portofolio yang menjelaskan apa yang benar-benar Anda kerjakan.</h2>
@@ -632,73 +857,238 @@ export function GuestHome() {
             Hubungkan peran, output, dan bukti pada proyek. Orang lain dapat
             memahami konteks kontribusi tanpa menebak dari judul pekerjaan.
           </p>
-          <Anchor href="/profiles/maya">Lihat contoh profil</Anchor>
+          <Anchor href={`/profiles/${activeProject.contributions[0]?.person.toLowerCase().split(' ')[0] ?? 'maya'}`}>
+            Lihat contoh profil
+          </Anchor>
         </div>
-        <div className="pl-evidence-card">
-          <div className="pl-person-row">
-            <span className="pl-avatar large">MP</span>
-            <div><strong>Maya Pradipta</strong><span>Data Engineer · Bandung</span></div>
-            <span className="pl-status success">Terverifikasi</span>
-          </div>
-          <div className="pl-evidence-block">
-            <Code size={24} weight="duotone" />
-            <div>
-              <strong>Pipeline validasi data sensor</strong>
-              <span>AquaLoop · 38% data lebih cepat diproses</span>
+        
+        {activeProject.contributions[0] && (
+          <div className="pl-evidence-card" aria-live="polite">
+            <div className="pl-person-row">
+              <span className="pl-avatar large">{activeProject.contributions[0].avatar}</span>
+              <div>
+                <strong>{activeProject.contributions[0].person}</strong>
+                <span>{activeProject.contributions[0].role}</span>
+              </div>
+              <span className="pl-status success">Terverifikasi</span>
+            </div>
+            <div className="pl-evidence-block">
+              <Code size={24} weight="duotone" />
+              <div>
+                <strong>{activeProject.contributions[0].task}</strong>
+                <span>{activeProject.contributions[0].metric}</span>
+              </div>
+            </div>
+            <div className="pl-proof-row">
+              {activeProject.contributions[0].proof.map((proofName) => (
+                <span key={proofName}>
+                  {proofName.toLowerCase().includes('repo') ? <LinkSimple size={16} /> : <ClipboardText size={16} />}
+                  {' '}{proofName}
+                </span>
+              ))}
             </div>
           </div>
-          <div className="pl-proof-row">
-            <span><LinkSimple size={16} /> Repository</span>
-            <span><ClipboardText size={16} /> Catatan pengujian</span>
-          </div>
-        </div>
+        )}
       </section>
 
-      <section className="pl-match-demo pl-section">
-        <div className="pl-match-score">
-          <span>86%</span>
-          <strong>Kecocokan kuat</strong>
-          <small>berdasarkan 5 sinyal</small>
-        </div>
-        <div className="pl-match-copy">
+      {/* Explainable Matching section (Reactive to selected project) */}
+      <section className="pl-match-demo pl-section pl-explainable-matching-section">
+        <div className="pl-match-copy" aria-live="polite">
           <p className="pl-eyebrow">Matching yang transparan</p>
           <h2>Anda selalu dapat melihat mengapa sebuah rekomendasi muncul.</h2>
           <ul className="pl-check-list">
-            <li><CheckCircle size={19} weight="fill" /> 3 kebutuhan proyek cocok dengan evidence</li>
-            <li><CheckCircle size={19} weight="fill" /> Lokasi dan ketersediaan sesuai</li>
-            <li><CheckCircle size={19} weight="fill" /> 1 gap kompetensi ditampilkan terbuka</li>
+            <li><CheckCircle size={19} weight="fill" /> {activeProject.matching.primaryReason}</li>
+            {activeProject.matching.supportingEvidence.map((evText, i) => (
+              <li key={i}><CheckCircle size={19} weight="fill" /> Bukti: {evText}</li>
+            ))}
+            <li className="pl-check-list__gap"><CheckCircle size={19} weight="fill" /> Celah: {activeProject.matching.mainGap}</li>
           </ul>
-          <Anchor href="/matches/aqua-maya" className="pl-button pl-button-primary">Lihat contoh alasan</Anchor>
+          <p className="pl-matching-limitation">
+            <strong>Keterbatasan data:</strong> {activeProject.matching.dataLimitation}
+          </p>
+        </div>
+
+        <div className="pl-matching-visual-card" aria-live="polite">
+          <div className="pl-match-score-header">
+            <div className="pl-match-score">
+              <span>{activeProject.matching.skillFit}%</span>
+              <strong>Kecocokan</strong>
+              <small>{activeProject.matching.confidenceLabel}</small>
+            </div>
+          </div>
+
+          {/* Dynamic matching bar chart */}
+          <div className="pl-matching-chart">
+            {[
+              { label: "Keahlian relevan", value: activeProject.matching.skillFit },
+              { label: "Evidence coverage", value: activeProject.matching.evidenceCoverage },
+              { label: "Ketersediaan", value: activeProject.matching.availability },
+              { label: "Project readiness", value: activeProject.matching.projectReadiness },
+              { label: "Data confidence", value: activeProject.matching.dataConfidence }
+            ].map((bar) => (
+              <div key={bar.label} className="pl-matching-chart__row">
+                <span className="pl-matching-chart__label">{bar.label}</span>
+                <div className="pl-matching-chart__bar-wrapper">
+                  <div
+                    className="pl-matching-chart__bar"
+                    style={{ width: `${bar.value}%` }}
+                  />
+                </div>
+                <span className="pl-matching-chart__value">{bar.value}%</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="pl-section">
-        <SectionTitle eyebrow="Cara kerja" title="Dari kebutuhan menuju kolaborasi" />
-        <div className="pl-steps">
-          {[
-            ["01", "Tentukan tujuan", "Ceritakan kebutuhan atau arah kontribusi Anda."],
-            ["02", "Tunjukkan evidence", "Hubungkan pekerjaan dengan output yang dapat diperiksa."],
-            ["03", "Nilai kecocokan", "Bandingkan alasan, gap, dan kesiapan bersama."],
-            ["04", "Mulai kolaborasi", "Bawa keputusan ke workspace dengan konteks utuh."],
-          ].map(([number, title, text]) => (
-            <div key={number}><span>{number}</span><h3>{title}</h3><p>{text}</p></div>
-          ))}
+      {/* Alur Kolaborasi - Stepper compact interaktif explainer */}
+      <section className="pl-section pl-collaboration-workflow-section">
+        <SectionTitle 
+          eyebrow="Cara kerja" 
+          title="Dari Kebutuhan Menuju Kolaborasi" 
+          description="Eksplorasi tahapan interaktif bagaimana kontribusi diverifikasi dan dimulai."
+        />
+        
+        <div className="pl-stepper-explainer">
+          <Stepper
+            initialStep={activeCollaborationStep}
+            showNavigation={false}
+            onStepChange={setActiveCollaborationStep}
+            stepLabels={["Temukan Proyek", "Periksa Evidence", "Pilih Kebutuhan", "Mulai Kolaborasi", "Pantau Status"]}
+          >
+            <Step>
+              <div className="pl-stepper-slide">
+                <h3>01. Temukan Proyek</h3>
+                <p>Eksplorasi proyek-proyek riil yang didaftarkan organisasi di bawah BRIN. Cari proyek berdasarkan tema riset, ketersediaan, atau lokasi terdekat Anda.</p>
+              </div>
+            </Step>
+            <Step>
+              <div className="pl-stepper-slide">
+                <h3>02. Periksa Evidence</h3>
+                <p>Setiap proyek publik menampilkan tautan repositori kode, catatan kalibrasi sensor, atau dokumen pendukung. Anda dapat memverifikasi kualitas pekerjaan secara mandiri.</p>
+              </div>
+            </Step>
+            <Step>
+              <div className="pl-stepper-slide">
+                <h3>03. Pilih Kebutuhan</h3>
+                <p>Sesuaikan keahlian dan ketersediaan waktu Anda dengan daftar Open Need yang diposting oleh manajer proyek untuk memulai kemitraan.</p>
+              </div>
+            </Step>
+            <Step>
+              <div className="pl-stepper-slide">
+                <h3>04. Mulai Kolaborasi</h3>
+                <p>Ajukan kesiapan Anda. Sistem matching kami secara otomatis melampirkan evidence portofolio Anda sebelumnya ke dalam usulan kolaborasi.</p>
+              </div>
+            </Step>
+            <Step>
+              <div className="pl-stepper-slide">
+                <h3>05. Pantau Status</h3>
+                <p>Lihat status progres kontribusi Anda dan progres validasi data secara transparan di dalam workspace terpadu.</p>
+              </div>
+            </Step>
+          </Stepper>
         </div>
       </section>
 
+      {/* Final CTA */}
       <section className="pl-final-cta">
         <div>
           <p className="pl-eyebrow">Mulai dengan konteks yang tepat</p>
           <h2>Kolaborasi yang baik dimulai dari bukti yang jelas.</h2>
         </div>
         <div className="pl-button-row">
-          <Anchor href="/register" className="pl-button pl-button-light">Bergabung sekarang</Anchor>
-          <Anchor href="/explore" className="pl-button pl-button-on-dark">Jelajahi proyek</Anchor>
+          <Anchor href="/explore" className="pl-button pl-button-light">Jelajahi proyek</Anchor>
+          <button 
+            type="button" 
+            onClick={handleCreateOpportunity} 
+            className="pl-button pl-button-on-dark"
+          >
+            Buka Peluang Kolaborasi
+          </button>
         </div>
       </section>
+
+      {/* Auth Dialog Modal */}
+      {isAuthDialogOpen && (
+        <div className="pl-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+          <div className="pl-modal-card">
+            <h3 id="auth-modal-title">Autentikasi Diperlukan</h3>
+            <p>Silakan masuk atau buat akun baru terlebih dahulu untuk melanjutkan tindakan terproteksi ini.</p>
+            <div className="pl-modal-actions">
+              <button
+                type="button"
+                className="pl-button pl-button-secondary"
+                onClick={() => setIsAuthDialogOpen(false)}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="pl-button pl-button-primary"
+                onClick={handleAuthSuccess}
+              >
+                Masuk (Simulasi)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Owned Project Dialog Modal */}
+      {isOwnedProjectDialogOpen && (
+        <div className="pl-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="owned-projects-title">
+          <div className="pl-modal-card">
+            <h3 id="owned-projects-title">Pilih Proyek Anda</h3>
+            <p>Pilih salah satu proyek milik Anda untuk menambahkan kebutuhan kontribusi baru:</p>
+            
+            <div className="pl-owned-projects-list">
+              {auth.user?.ownedProjects.map(proj => (
+                <button
+                  key={proj.id}
+                  type="button"
+                  className={`pl-owned-project-item-btn ${selectedOwnedProjectId === proj.id ? 'active' : ''}`}
+                  onClick={() => setSelectedOwnedProjectId(proj.id)}
+                >
+                  {proj.title}
+                </button>
+              ))}
+            </div>
+
+            <div className="pl-modal-actions pl-modal-actions--spaced">
+              <button
+                type="button"
+                className="pl-button pl-button-secondary"
+                onClick={() => {
+                  setIsOwnedProjectDialogOpen(false);
+                  setSelectedOwnedProjectId(null);
+                }}
+              >
+                Batal
+              </button>
+              <div className="pl-modal-actions-right">
+                <Anchor href="/projects/new" className="pl-button pl-button-secondary">
+                  Buat Proyek Baru
+                </Anchor>
+                <button
+                  type="button"
+                  className="pl-button pl-button-primary"
+                  disabled={!selectedOwnedProjectId}
+                  onClick={() => {
+                    announce(`Mengarahkan ke pembuatan peluang untuk proyek ${selectedOwnedProjectId}...`);
+                    window.location.href = `/opportunities/new?project=${selectedOwnedProjectId}`;
+                  }}
+                >
+                  Lanjut ke Form Peluang
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 export function NewUserHome({ onFirstValue }: HomeProps) {
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
