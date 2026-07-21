@@ -102,3 +102,39 @@ P0-03 wajib memeriksa dua konteks secara terpisah untuk memastikan inisialisasi 
 - Temporary worktree berhasil dibersihkan/dihapus dengan aman.
 - Tidak ada pelanggaran *Stop Conditions*.
 - Repositori siap, namun agen harus menunggu keputusan pengguna sebelum instalasi shadcn dilakukan secara permanen.
+
+---
+
+## Verification P0-04: shadcn Preset Selection and Decode Audit
+
+**Konteks Verifikasi:**
+P0-04 adalah proses read-only terstruktur untuk menemukan kandidat preset shadcn, mendekodenya, dan memastikan kesesuaian mutlak dengan arsitektur ProjectLink, terutama kewajiban Base UI dan pembatasan ketat terkait Phosphor icons.
+
+**Langkah Validasi:**
+1. **Verifikasi Git Sebelum P0-04 (Zero-Mutation Pre-Check):**
+   - Eksekusi `git status --short`, `git diff --check`, `git diff --stat` sebelum memulai command CLI.
+2. **Verifikasi Candidate Discovery & Decode:**
+   - Pastikan langkah investigasi/pencarian preset dilakukan melalui command yang benar.
+   - Pastikan preset code (misal: `preset-name`) yang di-*decode* bukan hasil karangan (hallucinated) melainkan berasal dari dokumentasi CLI (seperti `shadcn preset --help`).
+   - Verifikasi command aktual yang dijalankan: `shadcn preset decode <code> --json`.
+   - Periksa ketersediaan output JSON Decode dalam matriks laporan (mencakup: `style`, `baseColor`, `theme`, `iconLibrary`, `font`, `radius`, base UI compatibility).
+3. **Anti-Pattern & Lucide Check:**
+   - Verifikasi **mutlak** bahwa preset kandidat dinyatakan lulus (*APPROVED CANDIDATE*) hanya jika terbebas dari atribut terlarang.
+   - Agen **wajib** memeriksa dan melaporkan ada-tidaknya indikasi Lucide dalam seluruh bentuk berikut:
+     - Atribut JSON `iconLibrary: "lucide"`
+     - Kemunculan dependensi `lucide-react`
+     - Deskripsi preset yang menyebut Lucide
+     - Item di dalam *registryDependencies* atau array mana pun yang mengarah ke Lucide
+     - Keberadaan *icon library* lain yang tidak disetujui (seperti Radix Icons, Heroicons, dll).
+4. **Verifikasi Matriks Keputusan Akhir:**
+   - Keputusan akhir (`APPROVED CANDIDATE`, `REJECTED`, `BLOCKED`, `NOT FOUND`) sesuai matriks wajib tersedia.
+   - Matriks tidak boleh dilewati dan alasan keputusannya harus argumentatif dan berlandaskan JSON output.
+5. **Verifikasi Git Sesudah P0-04 (Zero-Mutation Post-Check):**
+   - Eksekusi ulang `git status --short`, `git diff --check`, `git diff --stat`.
+   - Tidak boleh ada mutasi (0 bytes changed) pada repository (termasuk *dependency*).
+
+**Exit Criteria:**
+- Discovery dan output *raw JSON decode* disajikan dalam *Decision Matrix*.
+- Evaluasi mendalam terhadap larangan Lucide dan kompatibilitas Phosphor terlaporkan berdasarkan bukti.
+- Repositori (sebelum dan sesudah) dibuktikan 100% *zero-mutation*.
+- Agen tidak membuat commit dan berhenti untuk meminta konfirmasi.

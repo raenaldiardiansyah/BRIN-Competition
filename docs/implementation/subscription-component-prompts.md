@@ -237,3 +237,106 @@ Merujuk ke `Verification Prompt P0-03` di `subscription-verification-prompts.md`
 **17. Files allowed to modify**
 - **Primary working tree:** NONE. Dilarang memodifikasi file apa pun.
 - **Temporary worktree:** CLI boleh menghasilkan perubahan hanya untuk keperluan audit. Perubahan tidak boleh di-commit, disalin ke primary working tree, atau dianggap diterima secara otomatis.
+
+---
+
+## P0-04: shadcn Preset Selection and Decode Audit
+
+**1. Tujuan**
+Mencari, mendekode, dan mengaudit kandidat preset resmi dari shadcn. Tujuan utamanya adalah memastikan Base UI digunakan, dependensi ikon kompatibel dengan Phosphor, dan gaya visual preset (style, baseColor, theme, radius, font) cocok dengan panduan desain ProjectLink. Keputusan preset harus didasarkan pada output JSON aktual, bukan tebakan.
+
+**2. Lokasi file dan route/parent**
+- Terminal CLI
+- Temporary Git worktree (hanya jika diperlukan secara absolut untuk command read-only)
+
+**3. Official references**
+- shadcn CLI presets documentation.
+- ProjectLink UI guidelines.
+
+**4. Data source**
+Not applicable.
+
+**5. shadcn components**
+Not applicable.
+
+**6. React Bits**
+Not applicable.
+
+**7. Phosphor icons**
+- ProjectLink menggunakan Phosphor sebagai satu-satunya icon system untuk UI baru.
+- Preset yang menggunakan atau mengunci Lucide secara hardcoded harus ditolak (`REJECTED`).
+- Preset yang menggunakan icon library lain harus diklasifikasikan `RISK` atau `REJECTED`.
+- Audit harus menentukan apakah properti `iconLibrary` pada output decode dapat diset ke Phosphor, opsi custom, atau dikosongkan secara aman tanpa merusak struktur komponen UI.
+- DILARANG menginstal dependency icon pada P0-04.
+- Dependensi Phosphor yang sudah ada di repository tidak boleh dimodifikasi.
+
+**8. Struktur visual/output**
+Matriks Keputusan (Decision Matrix) untuk masing-masing kandidat preset yang ditemukan.
+
+**9. Interaksi**
+Not applicable.
+
+**10. State**
+Not applicable.
+
+**11. Responsive behavior**
+Not applicable.
+
+**12. Accessibility**
+Not applicable.
+
+**13. Styling constraints**
+- Memerlukan preset yang tidak memaksakan *legacy conventions* (seperti `tailwind.config.js`).
+- Preset harus kompatibel penuh dengan Tailwind v4 dan struktur CSS-first.
+
+**14. Forbidden changes (Hal yang dilarang)**
+- JANGAN menjalankan `shadcn init`.
+- JANGAN menjalankan eksekusi yang merubah repository utama.
+- JANGAN membuat `components.json`.
+- JANGAN menginstal dependency (seperti Lucide, Radix, atau Phosphor baru).
+- JANGAN membuat commit.
+- JANGAN membuat temporary worktree yang tidak segera dibersihkan.
+- JANGAN memilih preset hanya karena itu adalah *default* opsi CLI.
+- JANGAN mengarang (hallucinate) preset code.
+- JANGAN menggunakan preset yang tidak dapat di-decode atau diverifikasi keabsahannya (tidak resmi).
+
+**15. Acceptance criteria**
+- **Candidate Discovery Procedure:**
+  1. Menjalankan command `help` / *read-only* untuk mengetahui kapabilitas preset CLI terbaru.
+  2. Menemukan candidate preset code dari sumber resmi CLI yang dapat dibuktikan dari *output* aktual.
+  3. Mencatat sumber dan code kandidat, dan jika tidak ada, langsung berstatus `BLOCKED` (Reason: no verifiable official preset code).
+- **Decode Audit:**
+  - Menggunakan `shadcn preset decode <code> --json` untuk memeriksa isi tiap kandidat.
+  - Membuktikan isi preset (style, baseColor, theme, font, radius, icon library) melalui output JSON.
+- **Decision Matrix & Keputusan Akhir:**
+  Setiap kandidat harus menghasilkan matriks berikut:
+  ```text
+  Preset code: 
+  Source: 
+  Component base: 
+  Style: 
+  Base color: 
+  Theme: 
+  Font: 
+  Radius: 
+  Icon library: 
+  Lucide presence: 
+  Phosphor compatibility: 
+  Tailwind v4 compatibility: 
+  Decision: [APPROVED CANDIDATE | REJECTED | BLOCKED | NOT FOUND]
+  Reason: 
+  ```
+- Syarat mutlak `APPROVED CANDIDATE`:
+  - Base UI terbukti.
+  - Tidak ada Lucide.
+  - Tidak mengunci icon library yang bertentangan.
+  - Dapat digunakan dengan Phosphor.
+  - Kompatibel dengan Tailwind v4.
+  - Raw decode output JSON tersedia dan diverifikasi.
+  - Repositori 100% *zero-mutation*.
+
+**16. Verification**
+Merujuk ke `Verification Prompt P0-04` di `subscription-verification-prompts.md`.
+
+**17. Files allowed to modify**
+NONE — Proses ini sepenuhnya bersifat *investigasi CLI* dan *read-only*.
