@@ -33,20 +33,14 @@ type FolderId = "project" | "contribution" | "evidence" | "matching" | "collabor
 
 type PendingIntent =
   | {
-      type: 'view-opportunity';
-      projectId: string;
-      opportunityId: string;
-      returnTo: string;
-    }
-  | {
-      type: 'apply-to-opportunity';
+      type: 'apply-opportunity';
       projectId: string;
       opportunityId: string;
       returnTo: string;
     }
   | {
       type: 'create-opportunity';
-      returnTo: '/opportunities/new';
+      returnTo: string;
     };
 
 
@@ -421,19 +415,19 @@ export function GuestHome() {
 
   // Auth Intent handlers
   const handleApplyContribution = () => {
-    if (!activeOpenNeed) return;
+    if (!selectedOpenNeedId) return;
 
     if (!auth.isAuthenticated) {
       setPendingIntent({
-        type: 'apply-to-opportunity',
-        projectId: activeProject.id,
-        opportunityId: activeOpenNeed.id,
-        returnTo: `/opportunities/${activeOpenNeed.id}`
+        type: 'apply-opportunity',
+        projectId: activeFeaturedProjectId,
+        opportunityId: selectedOpenNeedId,
+        returnTo: '/'
       });
       setIsAuthDialogOpen(true);
     } else {
-      announce(`Mengarahkan ke form pengajuan kontribusi ${activeOpenNeed.title}...`);
-      window.location.href = `/opportunities/${activeOpenNeed.id}/apply`;
+      announce(`Mengarahkan ke form pengajuan kontribusi untuk oportunitas ${selectedOpenNeedId}...`);
+      window.location.href = `/opportunities/${selectedOpenNeedId}/apply`;
     }
   };
 
@@ -441,11 +435,15 @@ export function GuestHome() {
     if (!auth.isAuthenticated) {
       setPendingIntent({
         type: 'create-opportunity',
-        returnTo: '/opportunities/new'
+        returnTo: '/'
       });
       setIsAuthDialogOpen(true);
     } else {
-      setIsOwnedProjectDialogOpen(true);
+      if (auth.user?.ownedProjects && auth.user.ownedProjects.length > 0) {
+        setIsOwnedProjectDialogOpen(true);
+      } else {
+        window.location.href = '/projects/new';
+      }
     }
   };
 
@@ -454,11 +452,24 @@ export function GuestHome() {
     setIsAuthDialogOpen(false);
 
     if (pendingIntent) {
-      if (pendingIntent.type === 'apply-to-opportunity') {
+      if (pendingIntent.type === 'apply-opportunity') {
         announce(`Login sukses! Melanjutkan ke oportunitas ${pendingIntent.opportunityId}...`);
         window.location.href = `/opportunities/${pendingIntent.opportunityId}/apply`;
       } else if (pendingIntent.type === 'create-opportunity') {
-        setIsOwnedProjectDialogOpen(true);
+        // simulation after login:
+        // if user has owned projects, open selection dialog. Otherwise go to new project page
+        const mockUser = {
+          name: "Taufik Hidayat",
+          ownedProjects: [
+            { id: "user-project-1", title: "Sistem Energi Mandiri Pedesaan" },
+            { id: "user-project-2", title: "Monitoring Microgrid Pintar" }
+          ]
+        };
+        if (mockUser.ownedProjects && mockUser.ownedProjects.length > 0) {
+          setIsOwnedProjectDialogOpen(true);
+        } else {
+          window.location.href = '/projects/new';
+        }
       }
       setPendingIntent(null);
     }
@@ -494,62 +505,165 @@ export function GuestHome() {
   return (
     <div className="pl-home pl-guest-home">
       <section className="pl-editorial-hero">
-        <div className="pl-hero-content">
-          <span className="pl-eyebrow">Project • Contribution • Evidence • Matching • Collaboration</span>
-          <h1>Bangun identitas profesional dari pekerjaan nyata.</h1>
-          <p>
-            ProjectLink menghubungkan kebutuhan proyek, kontribusi terverifikasi, dan alasan kecocokan dalam satu ruang kolaborasi.
-          </p>
-          <div className="pl-button-row">
-            <Anchor href="/explore" className="pl-button pl-button-primary">Jelajahi proyek</Anchor>
-            <button 
-              type="button" 
-              onClick={handleCreateOpportunity} 
-              className="pl-button pl-button-secondary"
-            >
-              Buka Peluang Kolaborasi
-            </button>
+        <div className="pl-guest-container pl-editorial-hero-inner">
+          <div className="pl-hero-content">
+            <span className="pl-eyebrow">Project • Contribution • Evidence • Matching • Collaboration</span>
+            <h1>Bangun identitas profesional dari pekerjaan nyata.</h1>
+            <p>
+              ProjectLink menghubungkan kebutuhan proyek, kontribusi terverifikasi, dan alasan kecocokan dalam satu ruang kolaborasi.
+            </p>
+            <div className="pl-button-row">
+              <Anchor href="/explore" className="pl-button pl-button-primary">Jelajahi proyek</Anchor>
+              <button 
+                type="button" 
+                onClick={handleCreateOpportunity} 
+                className="pl-button pl-button-secondary"
+              >
+                Buka Peluang Kolaborasi
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Desktop floating folder stage */}
-        <div className="pl-folder-stage pl-folder-stage--desktop">
-          <div className={`pl-folder-stage__cluster ${isPaperExpanded ? "pl-folder-stage__cluster--dimmed" : ""}`}>
-            {folders.map(folder => {
-              const isActive = activeFolder === folder.id;
-              return (
-                <div
-                  key={folder.id}
-                  className={`pl-floating-folder pl-floating-folder--${folder.id} ${
-                    isActive ? "pl-floating-folder--active" : ""
-                  }`}
-                >
-                  <div className="pl-floating-folder__visual">
-                    <ProjectLinkFolder
-                      color={folder.color}
-                      colorEnd={folder.colorEnd}
-                      colorBack={folder.colorBack}
-                      shadowColor={folder.shadowColor}
-                      open={isActive}
-                      onOpenChange={open => handleFolderToggle(folder.id, open)}
-                      label={folder.ariaLabel}
-                      items={folder.items}
-                      currentPaperIndex={isActive ? currentPaperIndex : 2}
-                      onPaperClick={handlePaperClick}
-                    />
-                    <span className="pl-floating-folder__label">
-                      {getFolderLabel(folder)}
+          {/* Desktop floating folder stage */}
+          <div className="pl-folder-stage pl-folder-stage--desktop">
+            <div className={`pl-folder-stage__cluster ${isPaperExpanded ? "pl-folder-stage__cluster--dimmed" : ""}`}>
+              {folders.map(folder => {
+                const isActive = activeFolder === folder.id;
+                return (
+                  <div
+                    key={folder.id}
+                    className={`pl-floating-folder pl-floating-folder--${folder.id} ${
+                      isActive ? "pl-floating-folder--active" : ""
+                    }`}
+                  >
+                    <div className="pl-floating-folder__visual">
+                      <ProjectLinkFolder
+                        color={folder.color}
+                        colorEnd={folder.colorEnd}
+                        colorBack={folder.colorBack}
+                        shadowColor={folder.shadowColor}
+                        open={isActive}
+                        onOpenChange={open => handleFolderToggle(folder.id, open)}
+                        label={folder.ariaLabel}
+                        items={folder.items}
+                        currentPaperIndex={isActive ? currentPaperIndex : 2}
+                        onPaperClick={handlePaperClick}
+                      />
+                      <span className="pl-floating-folder__label">
+                        {getFolderLabel(folder)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Central Expanded Paper Layer */}
+            {isPaperExpanded && activeFolder && (
+              <>
+                <div className="pl-expanded-paper-overlay" />
+                <div className="pl-expanded-paper" aria-live="polite">
+                  <div className="pl-expanded-paper__header">
+                    <span className="pl-expanded-paper__badge">
+                      {isFolderComplete ? "Selesai" : activeFolder.toUpperCase()}
                     </span>
+                    {!isFolderComplete && (
+                      <span className="pl-expanded-paper__index">{indexLabel}</span>
+                    )}
+                  </div>
+
+                  <div className={`pl-expanded-paper__content ${isTransitioning ? "pl-expanded-paper__content--leaving" : "pl-expanded-paper__content--entering"}`}>
+                    <div className="pl-expanded-paper__body">
+                      {isFolderComplete ? (
+                        <>
+                          <h3>Tinjauan Selesai</h3>
+                          <p>{completedMessages[activeFolder]}</p>
+                        </>
+                      ) : (
+                        activePaperInfo && (
+                          <>
+                            <h3>{activePaperInfo.title}</h3>
+                            <p>{activePaperInfo.desc}</p>
+                          </>
+                        )
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pl-expanded-paper__actions">
+                    <button
+                      className="pl-button-sm pl-button-secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCloseExpanded();
+                      }}
+                    >
+                      Tutup
+                    </button>
+
+                    {isFolderComplete ? (
+                      <button
+                        className="pl-button-sm pl-button-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          resetFolderState(null);
+                        }}
+                      >
+                        Selesai
+                      </button>
+                    ) : (
+                      <button
+                        className="pl-button-sm pl-button-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleNextPaper();
+                        }}
+                      >
+                        {currentPaperIndex === 0 ? "Selesai" : "Lanjut →"}
+                      </button>
+                    )}
                   </div>
                 </div>
-              );
-            })}
+              </>
+            )}
           </div>
 
-          {/* Central Expanded Paper Layer */}
-          {isPaperExpanded && activeFolder && (
-            <>
-              <div className="pl-expanded-paper-overlay" />
+          {/* Mobile folder stage with horizontal scroll selector */}
+          <div className="pl-folder-stage pl-folder-stage--mobile">
+            <div className="pl-mobile-folder-view">
+              {folders.filter(f => f.id === selectedMobileFolder).map(folder => {
+                const isActive = activeFolder === folder.id;
+                return (
+                  <div
+                    key={folder.id}
+                    className={`pl-floating-folder pl-floating-folder--mobile-active ${
+                      isActive ? "pl-floating-folder--active" : ""
+                    }`}
+                  >
+                    <div className="pl-floating-folder__visual">
+                      <ProjectLinkFolder
+                        color={folder.color}
+                        colorEnd={folder.colorEnd}
+                        colorBack={folder.colorBack}
+                        shadowColor={folder.shadowColor}
+                        open={isActive}
+                        onOpenChange={open => handleFolderToggle(folder.id, open)}
+                        label={folder.ariaLabel}
+                        items={folder.items}
+                        currentPaperIndex={isActive ? currentPaperIndex : 2}
+                        onPaperClick={handlePaperClick}
+                      />
+                      <span className="pl-floating-folder__label">
+                        {getFolderLabel(folder)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Mobile Expanded Paper */}
+            {isPaperExpanded && activeFolder && (
               <div className="pl-expanded-paper" aria-live="polite">
                 <div className="pl-expanded-paper__header">
                   <span className="pl-expanded-paper__badge">
@@ -612,133 +726,33 @@ export function GuestHome() {
                   )}
                 </div>
               </div>
-            </>
-          )}
-        </div>
+            )}
 
-        {/* Mobile folder stage with horizontal scroll selector */}
-        <div className="pl-folder-stage pl-folder-stage--mobile">
-          <div className="pl-mobile-folder-view">
-            {folders.filter(f => f.id === selectedMobileFolder).map(folder => {
-              const isActive = activeFolder === folder.id;
-              return (
-                <div
-                  key={folder.id}
-                  className={`pl-floating-folder pl-floating-folder--mobile-active ${
-                    isActive ? "pl-floating-folder--active" : ""
-                  }`}
-                >
-                  <div className="pl-floating-folder__visual">
-                    <ProjectLinkFolder
-                      color={folder.color}
-                      colorEnd={folder.colorEnd}
-                      colorBack={folder.colorBack}
-                      shadowColor={folder.shadowColor}
-                      open={isActive}
-                      onOpenChange={open => handleFolderToggle(folder.id, open)}
-                      label={folder.ariaLabel}
-                      items={folder.items}
-                      currentPaperIndex={isActive ? currentPaperIndex : 2}
-                      onPaperClick={handlePaperClick}
-                    />
-                    <span className="pl-floating-folder__label">
-                      {getFolderLabel(folder)}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Mobile Expanded Paper */}
-          {isPaperExpanded && activeFolder && (
-            <div className="pl-expanded-paper" aria-live="polite">
-              <div className="pl-expanded-paper__header">
-                <span className="pl-expanded-paper__badge">
-                  {isFolderComplete ? "Selesai" : activeFolder.toUpperCase()}
-                </span>
-                {!isFolderComplete && (
-                  <span className="pl-expanded-paper__index">{indexLabel}</span>
-                )}
-              </div>
-
-              <div className={`pl-expanded-paper__content ${isTransitioning ? "pl-expanded-paper__content--leaving" : "pl-expanded-paper__content--entering"}`}>
-                <div className="pl-expanded-paper__body">
-                  {isFolderComplete ? (
-                    <>
-                      <h3>Tinjauan Selesai</h3>
-                      <p>{completedMessages[activeFolder]}</p>
-                    </>
-                  ) : (
-                    activePaperInfo && (
-                      <>
-                        <h3>{activePaperInfo.title}</h3>
-                        <p>{activePaperInfo.desc}</p>
-                      </>
-                    )
-                  )}
-                </div>
-              </div>
-
-              <div className="pl-expanded-paper__actions">
+            <div className="pl-mobile-folder-selector" role="tablist" aria-label="Pilih Folder">
+              {folders.map(folder => (
                 <button
-                  className="pl-button-sm pl-button-secondary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloseExpanded();
-                  }}
+                  key={folder.id}
+                  role="tab"
+                  aria-selected={selectedMobileFolder === folder.id}
+                  className={`pl-mobile-folder-btn ${selectedMobileFolder === folder.id ? "active" : ""}`}
+                  onClick={() => handleMobileFolderSelect(folder.id)}
                 >
-                  Tutup
+                  {folder.label}
                 </button>
-
-                {isFolderComplete ? (
-                  <button
-                    className="pl-button-sm pl-button-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      resetFolderState(null);
-                    }}
-                  >
-                    Selesai
-                  </button>
-                ) : (
-                  <button
-                    className="pl-button-sm pl-button-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleNextPaper();
-                    }}
-                  >
-                    {currentPaperIndex === 0 ? "Selesai" : "Lanjut →"}
-                  </button>
-                )}
-              </div>
+              ))}
             </div>
-          )}
-
-          <div className="pl-mobile-folder-selector" role="tablist" aria-label="Pilih Folder">
-            {folders.map(folder => (
-              <button
-                key={folder.id}
-                role="tab"
-                aria-selected={selectedMobileFolder === folder.id}
-                className={`pl-mobile-folder-btn ${selectedMobileFolder === folder.id ? "active" : ""}`}
-                onClick={() => handleMobileFolderSelect(folder.id)}
-              >
-                {folder.label}
-              </button>
-            ))}
           </div>
         </div>
       </section>
 
       {/* Goal selector custom section */}
       <section className="pl-section pl-goal-selector-section">
-        <SectionTitle
-          eyebrow="Tentukan Arah Anda"
-          title="Apa yang ingin Anda lakukan di ProjectLink?"
-          description="Pilih salah satu opsi untuk menyesuaikan alur eksplorasi Anda."
-        />
+        <div className="pl-guest-container">
+          <SectionTitle
+            eyebrow="Tentukan Arah Anda"
+            title="Apa yang ingin Anda lakukan di ProjectLink?"
+            description="Pilih salah satu opsi untuk menyesuaikan alur eksplorasi Anda."
+          />
         <div className="pl-goal-grid">
           {goals.map((goal) => (
             <a className="pl-goal-card" href={goal.href} key={goal.title}>
@@ -749,80 +763,93 @@ export function GuestHome() {
             </a>
           ))}
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* Proyek Pilihan with CardSwap split integration */}
       <section className="pl-section pl-featured-projects-section">
-        <SectionTitle
-          eyebrow="Proyek pilihan"
-          title="Lihat peluang yang sedang bergerak"
-          action={<Anchor href="/explore" className="pl-text-action">Lihat semua <ArrowRight size={17} /></Anchor>}
-        />
-        
-        <div className="pl-project-split-layout">
-          {/* Left panel: Active Project Details */}
-          <div className="pl-project-split-left" aria-live="polite">
-            <div className="pl-project-detail-card">
-              <div className="pl-project-detail-header">
-                <span className="pl-project-detail-org">{activeProject.organization}</span>
-                <span className={`pl-status pl-status--${activeProject.lifecycle.toLowerCase()}`}>
-                  {activeProject.lifecycle}
-                </span>
-              </div>
-              <h3 className="pl-project-detail-title">{activeProject.title}</h3>
-              
-              <div className="pl-project-detail-field">
-                <strong>Masalah yang diselesaikan:</strong>
-                <p>{activeProject.problem}</p>
-              </div>
-
-              <div className="pl-project-detail-field">
-                <strong>Readiness:</strong>
-                <p>{activeProject.readiness} <small className="pl-readiness-source">({activeProject.readinessSource})</small></p>
-              </div>
-
-              {activeProject.openNeeds && activeProject.openNeeds.length > 0 && (
-                <div className="pl-project-detail-field">
-                  <strong>Kebutuhan Kontribusi:</strong>
-                  <div className="pl-open-needs-selector">
-                    {activeProject.openNeeds.map(need => (
-                      <button
-                        key={need.id}
-                        type="button"
-                        className={`pl-open-need-btn ${selectedOpenNeedId === need.id ? 'active' : ''}`}
-                        onClick={() => setSelectedOpenNeedId(need.id)}
-                      >
-                        {need.title} · <small>{need.commitment}</small>
-                      </button>
-                    ))}
-                  </div>
+        <div className="pl-guest-container">
+          <SectionTitle
+            eyebrow="Proyek pilihan"
+            title="Lihat peluang yang sedang bergerak"
+            action={<Anchor href="/explore" className="pl-text-action">Lihat semua <ArrowRight size={17} /></Anchor>}
+          />
+          
+          <div className="pl-project-split-layout">
+            {/* Left panel: Active Project Details */}
+            <div className="pl-project-split-left" aria-live="polite">
+              <div className="pl-project-detail-card">
+                <div className="pl-project-detail-header">
+                  <span className="pl-project-detail-org">{activeProject.organization}</span>
+                  <span className={`pl-status pl-status--${activeProject.lifecycle.toLowerCase()}`}>
+                    {activeProject.lifecycle}
+                  </span>
                 </div>
-              )}
+                <h3 className="pl-project-detail-title">{activeProject.title}</h3>
+                
+                <div className="pl-project-detail-field">
+                  <strong>Masalah yang diselesaikan:</strong>
+                  <p>{activeProject.problem}</p>
+                </div>
 
-              <div className="pl-project-detail-actions">
-                <Anchor href={`/explore?project=${activeProject.id}`} className="pl-button pl-button-secondary">
-                  Lihat Kebutuhan
-                </Anchor>
-                <button
-                  type="button"
-                  className="pl-button pl-button-primary"
-                  onClick={handleApplyContribution}
-                >
-                  Ajukan Kontribusi
-                </button>
+                <div className="pl-project-detail-field">
+                  <strong>Readiness:</strong>
+                  <p>{activeProject.readiness} <small className="pl-readiness-source">({activeProject.readinessSource})</small></p>
+                </div>
+
+                {activeProject.openNeeds && activeProject.openNeeds.length > 0 && (
+                  <div className="pl-project-detail-field">
+                    <strong>Kebutuhan Kontribusi:</strong>
+                    <div className="pl-open-needs-selector">
+                      {activeProject.openNeeds.map(need => (
+                        <button
+                          key={need.id}
+                          type="button"
+                          className={`pl-open-need-btn ${selectedOpenNeedId === need.id ? 'active' : ''}`}
+                          onClick={() => setSelectedOpenNeedId(need.id)}
+                        >
+                          {need.title} · <small>{need.commitment}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pl-project-detail-actions">
+                  <a 
+                    href={selectedOpenNeedId ? `/opportunities/${selectedOpenNeedId}` : '#'} 
+                    className={`pl-button pl-button-secondary ${!selectedOpenNeedId ? 'disabled' : ''}`}
+                    aria-disabled={!selectedOpenNeedId}
+                    onClick={(e) => {
+                      if (!selectedOpenNeedId) {
+                        e.preventDefault();
+                      }
+                    }}
+                  >
+                    Lihat Kebutuhan
+                  </a>
+                  <button
+                    type="button"
+                    className="pl-button pl-button-primary"
+                    disabled={!selectedOpenNeedId}
+                    aria-disabled={!selectedOpenNeedId}
+                    onClick={handleApplyContribution}
+                  >
+                    Ajukan Kontribusi
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Right panel: React Bits CardSwap Stack */}
-          <div className="pl-project-split-right">
-            <div className="pl-card-swap-stage">
+            {/* Right panel: React Bits CardSwap Stack */}
+            <div className="pl-featured-card-swap-wrap">
               <CardSwap
-                width={360}
-                height={260}
+                width="100%"
+                height="100%"
                 cardDistance={24}
                 verticalDistance={26}
-                delay={7000}
+                delay={3000}
+                interactionPauseDuration={10000}
                 pauseOnHover
                 skewAmount={2}
                 easing="linear"
@@ -836,8 +863,12 @@ export function GuestHome() {
                         <span className="project-card-swap__lifecycle">{project.lifecycle}</span>
                       </div>
                       <h4 className="project-card-swap__title">{project.title}</h4>
-                      <p className="project-card-swap__need">Needs: <strong>{project.openNeeds[0]?.title}</strong></p>
+                      <p className="project-card-swap__need">Kebutuhan utama: <strong>{project.openNeeds[0]?.title}</strong></p>
                       <p className="project-card-swap__reason">{project.recommendationReason}</p>
+                      <div className="project-card-swap__footer">
+                        <span>💡 {project.evidence.length} evidence</span>
+                        <span>{project.matching.dataConfidence}% match</span>
+                      </div>
                     </div>
                   </Card>
                 ))}
@@ -847,164 +878,178 @@ export function GuestHome() {
         </div>
       </section>
 
-      {/* Contribution-Evidence section (Reactive to selected project) */}
-      <section className="pl-feature-split pl-section pl-contribution-evidence-section">
-        <div className="pl-feature-copy" aria-live="polite">
-          <span className="pl-icon-box"><Medal size={26} weight="duotone" /></span>
-          <p className="pl-eyebrow">Kontribusi yang terlihat</p>
-          <h2>Portofolio yang menjelaskan apa yang benar-benar Anda kerjakan.</h2>
-          <p>
-            Hubungkan peran, output, dan bukti pada proyek. Orang lain dapat
-            memahami konteks kontribusi tanpa menebak dari judul pekerjaan.
-          </p>
-          <Anchor href={`/profiles/${activeProject.contributions[0]?.person.toLowerCase().split(' ')[0] ?? 'maya'}`}>
-            Lihat contoh profil
-          </Anchor>
-        </div>
-        
-        {activeProject.contributions[0] && (
-          <div className="pl-evidence-card" aria-live="polite">
-            <div className="pl-person-row">
-              <span className="pl-avatar large">{activeProject.contributions[0].avatar}</span>
-              <div>
-                <strong>{activeProject.contributions[0].person}</strong>
-                <span>{activeProject.contributions[0].role}</span>
-              </div>
-              <span className="pl-status success">Terverifikasi</span>
+      {/* CTA Belt */}
+      <section className="pl-cta-belt">
+        <div className="pl-guest-container">
+          <div className="pl-cta-belt-inner">
+            <div className="pl-cta-belt-text">
+              <h3>Mulai dengan konteks yang tepat</h3>
+              <p>Kolaborasi yang baik dimulai dari bukti yang jelas.</p>
             </div>
-            <div className="pl-evidence-block">
-              <Code size={24} weight="duotone" />
-              <div>
-                <strong>{activeProject.contributions[0].task}</strong>
-                <span>{activeProject.contributions[0].metric}</span>
-              </div>
-            </div>
-            <div className="pl-proof-row">
-              {activeProject.contributions[0].proof.map((proofName) => (
-                <span key={proofName}>
-                  {proofName.toLowerCase().includes('repo') ? <LinkSimple size={16} /> : <ClipboardText size={16} />}
-                  {' '}{proofName}
-                </span>
-              ))}
+            <div className="pl-cta-belt-actions">
+              <Anchor href="/explore" className="pl-button pl-button-light">Jelajahi proyek</Anchor>
+              <button 
+                type="button" 
+                onClick={handleCreateOpportunity} 
+                className="pl-button pl-button-on-dark"
+              >
+                Buka Peluang Kolaborasi
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      </section>
+
+      {/* Contribution-Evidence section (Reactive to selected project) */}
+      <section className="pl-section pl-contribution-evidence-section">
+        <div className="pl-guest-container pl-contribution-grid">
+          <div className="pl-feature-copy" aria-live="polite">
+            <span className="pl-icon-box"><Medal size={26} weight="duotone" /></span>
+            <p className="pl-eyebrow">Kontribusi yang terlihat</p>
+            <h2>Portofolio yang menjelaskan apa yang benar-benar Anda kerjakan.</h2>
+            <p>
+              Hubungkan peran, output, dan bukti pada proyek. Orang lain dapat
+              memahami konteks kontribusi tanpa menebak dari judul pekerjaan.
+            </p>
+            <Anchor href={`/profiles/${activeProject.contributions[0]?.person.toLowerCase().split(' ')[0] ?? 'maya'}`}>
+              Lihat contoh profil
+            </Anchor>
+          </div>
+          
+          {activeProject.contributions[0] && (
+            <div className="pl-contribution-preview-wrap">
+              <div className="pl-evidence-card" aria-live="polite">
+                <div className="pl-person-row">
+                  <span className="pl-avatar large">{activeProject.contributions[0].avatar}</span>
+                  <div>
+                    <strong>{activeProject.contributions[0].person}</strong>
+                    <span>{activeProject.contributions[0].role}</span>
+                  </div>
+                  <span className="pl-status success">Terverifikasi</span>
+                </div>
+                <div className="pl-evidence-block">
+                  <Code size={24} weight="duotone" />
+                  <div>
+                    <strong>{activeProject.contributions[0].task}</strong>
+                    <span>{activeProject.contributions[0].metric}</span>
+                  </div>
+                </div>
+                <div className="pl-proof-row">
+                  {activeProject.contributions[0].proof.map((proofName) => (
+                    <span key={proofName}>
+                      {proofName.toLowerCase().includes('repo') ? <LinkSimple size={16} /> : <ClipboardText size={16} />}
+                      {' '}{proofName}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Explainable Matching section (Reactive to selected project) */}
-      <section className="pl-match-demo pl-section pl-explainable-matching-section">
-        <div className="pl-match-copy" aria-live="polite">
-          <p className="pl-eyebrow">Matching yang transparan</p>
-          <h2>Anda selalu dapat melihat mengapa sebuah rekomendasi muncul.</h2>
-          <ul className="pl-check-list">
-            <li><CheckCircle size={19} weight="fill" /> {activeProject.matching.primaryReason}</li>
-            {activeProject.matching.supportingEvidence.map((evText, i) => (
-              <li key={i}><CheckCircle size={19} weight="fill" /> Bukti: {evText}</li>
-            ))}
-            <li className="pl-check-list__gap"><CheckCircle size={19} weight="fill" /> Celah: {activeProject.matching.mainGap}</li>
-          </ul>
-          <p className="pl-matching-limitation">
-            <strong>Keterbatasan data:</strong> {activeProject.matching.dataLimitation}
-          </p>
-        </div>
-
-        <div className="pl-matching-visual-card" aria-live="polite">
-          <div className="pl-match-score-header">
-            <div className="pl-match-score">
-              <span>{activeProject.matching.skillFit}%</span>
-              <strong>Kecocokan</strong>
-              <small>{activeProject.matching.confidenceLabel}</small>
-            </div>
+      <section className="pl-section pl-explainable-matching-section">
+        <div className="pl-guest-container pl-matching-grid">
+          <div className="pl-match-copy" aria-live="polite">
+            <p className="pl-eyebrow">Matching yang transparan</p>
+            <h2>Anda selalu dapat melihat mengapa sebuah rekomendasi muncul.</h2>
+            <ul className="pl-check-list">
+              <li><CheckCircle size={19} weight="fill" /> {activeProject.matching.primaryReason}</li>
+              {activeProject.matching.supportingEvidence.map((evText, i) => (
+                <li key={i}><CheckCircle size={19} weight="fill" /> Bukti: {evText}</li>
+              ))}
+              <li className="pl-check-list__gap"><CheckCircle size={19} weight="fill" /> Celah: {activeProject.matching.mainGap}</li>
+            </ul>
+            <p className="pl-matching-limitation">
+              <strong>Keterbatasan data:</strong> {activeProject.matching.dataLimitation}
+            </p>
           </div>
 
-          {/* Dynamic matching bar chart */}
-          <div className="pl-matching-chart">
-            {[
-              { label: "Keahlian relevan", value: activeProject.matching.skillFit },
-              { label: "Evidence coverage", value: activeProject.matching.evidenceCoverage },
-              { label: "Ketersediaan", value: activeProject.matching.availability },
-              { label: "Project readiness", value: activeProject.matching.projectReadiness },
-              { label: "Data confidence", value: activeProject.matching.dataConfidence }
-            ].map((bar) => (
-              <div key={bar.label} className="pl-matching-chart__row">
-                <span className="pl-matching-chart__label">{bar.label}</span>
-                <div className="pl-matching-chart__bar-wrapper">
-                  <div
-                    className="pl-matching-chart__bar"
-                    style={{ width: `${bar.value}%` }}
-                  />
-                </div>
-                <span className="pl-matching-chart__value">{bar.value}%</span>
+          <div className="pl-matching-visual-card" aria-live="polite">
+            <div className="pl-match-score-header">
+              <div className="pl-match-score">
+                <span>{activeProject.matching.skillFit}%</span>
+                <strong>Kecocokan</strong>
+                <small>{activeProject.matching.confidenceLabel}</small>
               </div>
-            ))}
+            </div>
+
+            {/* Dynamic matching bar chart */}
+            <div className="pl-matching-chart">
+              {[
+                { label: "Keahlian relevan", value: activeProject.matching.skillFit },
+                { label: "Evidence coverage", value: activeProject.matching.evidenceCoverage },
+                { label: "Ketersediaan", value: activeProject.matching.availability },
+                { label: "Project readiness", value: activeProject.matching.projectReadiness },
+                { label: "Data confidence", value: activeProject.matching.dataConfidence }
+              ].map((bar) => (
+                <div key={bar.label} className="pl-matching-chart__row">
+                  <span className="pl-matching-chart__label">{bar.label}</span>
+                  <div className="pl-matching-chart__bar-wrapper">
+                    <div
+                      className="pl-matching-chart__bar"
+                      style={{ width: `${bar.value}%` }}
+                    />
+                  </div>
+                  <span className="pl-matching-chart__value">{bar.value}%</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Alur Kolaborasi - Stepper compact interaktif explainer */}
       <section className="pl-section pl-collaboration-workflow-section">
-        <SectionTitle 
-          eyebrow="Cara kerja" 
-          title="Dari Kebutuhan Menuju Kolaborasi" 
-          description="Eksplorasi tahapan interaktif bagaimana kontribusi diverifikasi dan dimulai."
-        />
-        
-        <div className="pl-stepper-explainer">
-          <Stepper
-            initialStep={activeCollaborationStep}
-            showNavigation={false}
-            onStepChange={setActiveCollaborationStep}
-            stepLabels={["Temukan Proyek", "Periksa Evidence", "Pilih Kebutuhan", "Mulai Kolaborasi", "Pantau Status"]}
-          >
-            <Step>
-              <div className="pl-stepper-slide">
-                <h3>01. Temukan Proyek</h3>
-                <p>Eksplorasi proyek-proyek riil yang didaftarkan organisasi di bawah BRIN. Cari proyek berdasarkan tema riset, ketersediaan, atau lokasi terdekat Anda.</p>
-              </div>
-            </Step>
-            <Step>
-              <div className="pl-stepper-slide">
-                <h3>02. Periksa Evidence</h3>
-                <p>Setiap proyek publik menampilkan tautan repositori kode, catatan kalibrasi sensor, atau dokumen pendukung. Anda dapat memverifikasi kualitas pekerjaan secara mandiri.</p>
-              </div>
-            </Step>
-            <Step>
-              <div className="pl-stepper-slide">
-                <h3>03. Pilih Kebutuhan</h3>
-                <p>Sesuaikan keahlian dan ketersediaan waktu Anda dengan daftar Open Need yang diposting oleh manajer proyek untuk memulai kemitraan.</p>
-              </div>
-            </Step>
-            <Step>
-              <div className="pl-stepper-slide">
-                <h3>04. Mulai Kolaborasi</h3>
-                <p>Ajukan kesiapan Anda. Sistem matching kami secara otomatis melampirkan evidence portofolio Anda sebelumnya ke dalam usulan kolaborasi.</p>
-              </div>
-            </Step>
-            <Step>
-              <div className="pl-stepper-slide">
-                <h3>05. Pantau Status</h3>
-                <p>Lihat status progres kontribusi Anda dan progres validasi data secara transparan di dalam workspace terpadu.</p>
-              </div>
-            </Step>
-          </Stepper>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="pl-final-cta">
-        <div>
-          <p className="pl-eyebrow">Mulai dengan konteks yang tepat</p>
-          <h2>Kolaborasi yang baik dimulai dari bukti yang jelas.</h2>
-        </div>
-        <div className="pl-button-row">
-          <Anchor href="/explore" className="pl-button pl-button-light">Jelajahi proyek</Anchor>
-          <button 
-            type="button" 
-            onClick={handleCreateOpportunity} 
-            className="pl-button pl-button-on-dark"
-          >
-            Buka Peluang Kolaborasi
-          </button>
+        <div className="pl-guest-container">
+          <SectionTitle 
+            eyebrow="Cara kerja" 
+            title="Dari Kebutuhan Menuju Kolaborasi" 
+            description="Eksplorasi tahapan interaktif bagaimana kontribusi diverifikasi dan dimulai."
+          />
+          
+          <div className="pl-collaboration-stepper-wrap">
+            <div className="pl-stepper-explainer">
+              <Stepper
+                initialStep={activeCollaborationStep}
+                showNavigation={false}
+                onStepChange={setActiveCollaborationStep}
+                stepLabels={["Temukan Proyek", "Periksa Evidence", "Pilih Kebutuhan", "Mulai Kolaborasi", "Pantau Status"]}
+              >
+                <Step>
+                  <div className="pl-stepper-slide">
+                    <h3>01. Temukan Proyek</h3>
+                    <p>Eksplorasi proyek-proyek riil yang didaftarkan organisasi di bawah BRIN. Cari proyek berdasarkan tema riset, ketersediaan, atau lokasi terdekat Anda.</p>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="pl-stepper-slide">
+                    <h3>02. Periksa Evidence</h3>
+                    <p>Setiap proyek publik menampilkan tautan repositori kode, catatan kalibrasi sensor, atau dokumen pendukung. Anda dapat memverifikasi kualitas pekerjaan secara mandiri.</p>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="pl-stepper-slide">
+                    <h3>03. Pilih Kebutuhan</h3>
+                    <p>Sesuaikan keahlian dan ketersediaan waktu Anda dengan daftar Open Need yang diposting oleh manajer proyek untuk memulai kemitraan.</p>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="pl-stepper-slide">
+                    <h3>04. Mulai Kolaborasi</h3>
+                    <p>Ajukan kesiapan Anda. Sistem matching kami secara otomatis melampirkan evidence portofolio Anda sebelumnya ke dalam usulan kolaborasi.</p>
+                  </div>
+                </Step>
+                <Step>
+                  <div className="pl-stepper-slide">
+                    <h3>05. Pantau Status</h3>
+                    <p>Lihat status progres kontribusi Anda dan progres validasi data secara transparan di dalam workspace terpadu.</p>
+                  </div>
+                </Step>
+              </Stepper>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1042,7 +1087,10 @@ export function GuestHome() {
             <p>Pilih salah satu proyek milik Anda untuk menambahkan kebutuhan kontribusi baru:</p>
             
             <div className="pl-owned-projects-list">
-              {auth.user?.ownedProjects.map(proj => (
+              {(auth.user?.ownedProjects ?? [
+                { id: "user-project-1", title: "Sistem Energi Mandiri Pedesaan" },
+                { id: "user-project-2", title: "Monitoring Microgrid Pintar" }
+              ]).map(proj => (
                 <button
                   key={proj.id}
                   type="button"

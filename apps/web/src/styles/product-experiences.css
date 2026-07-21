@@ -1216,7 +1216,7 @@
 }
 
 /* Posisi dan rotasi masing-masing folder (isolated visual wraps) */
-@media (min-width: 1360px) {
+@media (min-width: 1024px) {
   .pl-guest-home .pl-folder-stage {
     width: 620px;
     height: 500px;
@@ -1383,7 +1383,7 @@
   display: none;
 }
 
-@media (max-width: 1359px) {
+@media (max-width: 1023px) {
   .pl-guest-home .pl-editorial-hero {
     grid-template-columns: 1fr;
     gap: 48px;
@@ -3278,3 +3278,233 @@
     flex-direction: column;
   }
 }
+
+/* ========================================================
+   TARGETED VISUAL FIXES FOR GUEST HOMEPAGE
+   ======================================================== */
+
+/* 1. CardSwap Card Solid White Background */
+.pl-guest-home .project-card-swap__card {
+  background: #ffffff !important;
+  border: 1px solid rgba(34, 83, 178, 0.12) !important;
+  box-shadow: 0 10px 30px rgba(15, 35, 75, 0.08) !important;
+}
+
+.pl-guest-home .project-card-swap__item-content {
+  background: #ffffff !important;
+  border-radius: 16px;
+}
+
+/* 2. Contribution Section Padding & Proportional Layout */
+.pl-guest-home .pl-contribution-evidence-section {
+  padding-block: clamp(48px, 5vw, 64px) !important;
+}
+
+.pl-guest-home .pl-evidence-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(34, 83, 178, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(35, 66, 120, 0.08);
+}
+
+/* 3. Explainable Matching Section: Blue Background & Left-Right Layout */
+.pl-guest-home .pl-explainable-matching-section {
+  background: linear-gradient(135deg, #0b1f48 0%, #102f72 100%) !important;
+  border-radius: 24px;
+  padding: clamp(48px, 5vw, 64px) clamp(36px, 4vw, 56px) !important;
+  color: #ffffff !important;
+}
+
+.pl-guest-home .pl-explainable-matching-section .pl-eyebrow {
+  color: #60a5fa !important;
+}
+
+.pl-guest-home .pl-explainable-matching-section h2,
+.pl-guest-home .pl-explainable-matching-section h3 {
+  color: #ffffff !important;
+}
+
+.pl-guest-home .pl-explainable-matching-section p,
+.pl-guest-home .pl-explainable-matching-section li,
+.pl-guest-home .pl-explainable-matching-section span:not(.pl-tag):not(.pl-eyebrow) {
+  color: rgba(255, 255, 255, 0.90);
+}
+
+/* Desktop 2-Column Left-Right Grids (>= 1024px) */
+@media (min-width: 1024px) {
+  /* Hero Grid: Kiri - Kanan */
+  .pl-guest-home .pl-editorial-hero {
+    display: block !important;
+    width: 100% !important;
+  }
+  .pl-guest-home .pl-editorial-hero-inner {
+    display: grid !important;
+    grid-template-columns: minmax(0, 52fr) minmax(0, 48fr) !important;
+    align-items: center !important;
+    column-gap: clamp(32px, 4vw, 64px) !important;
+  }
+  .pl-guest-home .pl-editorial-hero-inner > * {
+    min-width: 0;
+  }
+  .pl-guest-home .pl-folder-stage--desktop {
+    display: block !important;
+  }
+  .pl-guest-home .pl-folder-stage--mobile {
+    display: none !important;
+  }
+
+  /* Contribution Grid: Kiri - Kanan */
+  .pl-guest-home .pl-contribution-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 48fr) minmax(0, 52fr) !important;
+    align-items: center !important;
+    column-gap: clamp(32px, 4vw, 48px) !important;
+  }
+  .pl-guest-home .pl-contribution-grid > * {
+    min-width: 0;
+  }
+
+  /* Explainable Matching Grid: Kiri - Kanan */
+  .pl-guest-home .pl-matching-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 44fr) minmax(0, 56fr) !important;
+    align-items: center !important;
+    column-gap: clamp(32px, 4vw, 48px) !important;
+  }
+  .pl-guest-home .pl-matching-grid > * {
+    min-width: 0;
+  }
+  .pl-guest-home .pl-matching-visual-card {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    align-self: center;
+    background: linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.18),
+      rgba(255, 255, 255, 0.08)
+    ) !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    border-radius: 24px !important;
+    padding: 32px !important;
+    box-shadow: 0 20px 50px rgba(4, 20, 58, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    color: #ffffff !important;
+  }
+  .pl-guest-home .pl-matching-visual-card .pl-match-score-header,
+  .pl-guest-home .pl-matching-visual-card .pl-match-score-header div,
+  .pl-guest-home .pl-matching-visual-card .pl-match-score-header span,
+  .pl-guest-home .pl-matching-visual-card .pl-match-score-header p {
+    color: #ffffff !important;
+  }
+  .pl-guest-home .pl-matching-visual-card .pl-matching-chart__label {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-weight: 500;
+  }
+  .pl-guest-home .pl-matching-visual-card .pl-matching-chart__value {
+    color: #ffffff !important;
+    font-weight: 700;
+  }
+  .pl-guest-home .pl-matching-visual-card .pl-matching-chart__bar-wrapper {
+    background: rgba(255, 255, 255, 0.18) !important;
+  }
+  .pl-guest-home .pl-matching-limitation {
+    background: rgba(254, 243, 199, 0.95) !important;
+    border: 1px solid #fde68a !important;
+    color: #78350f !important;
+    font-weight: 600;
+  }
+}
+
+/* Tablet (768px-1023px) 2-Column Grid */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .pl-guest-home .pl-contribution-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    align-items: center !important;
+    gap: 32px;
+  }
+  .pl-guest-home .pl-matching-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    align-items: center !important;
+    gap: 32px;
+  }
+}
+
+
+/* 4. CTA Belt Solid Blue Surface & Buttons */
+.pl-guest-home .pl-cta-belt {
+  padding-block: clamp(24px, 3vw, 36px) !important;
+}
+
+.pl-guest-home .pl-cta-belt-inner {
+  border-radius: 20px;
+  background: linear-gradient(130deg, #1d4ed8 0%, #2563eb 56%, #0877df 100%) !important;
+  color: #ffffff !important;
+  padding: 28px 36px !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+  box-shadow: 0 14px 36px rgba(29, 78, 216, 0.25);
+}
+
+.pl-guest-home .pl-cta-belt-text h3 {
+  margin: 0 0 6px 0;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #93c5fd !important;
+}
+
+.pl-guest-home .pl-cta-belt-text p {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff !important;
+  line-height: 1.3;
+}
+
+.pl-guest-home .pl-cta-belt-actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pl-guest-home .pl-cta-belt-actions .pl-button-light {
+  background: #ffffff !important;
+  color: #1d4ed8 !important;
+  font-weight: 700;
+  padding: 12px 22px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+}
+
+.pl-guest-home .pl-cta-belt-actions .pl-button-on-dark {
+  background: transparent !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.6) !important;
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .pl-guest-home .pl-cta-belt-inner {
+    flex-direction: column;
+    text-align: center;
+    padding: 24px !important;
+  }
+  .pl-guest-home .pl-cta-belt-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+

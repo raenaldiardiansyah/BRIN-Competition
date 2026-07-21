@@ -255,7 +255,7 @@ function StepIndicator({ step, label, currentStep, onClickStep, disableStepIndic
     <motion.button
       type="button"
       onClick={handleClick}
-      className="projectlink-stepper__indicator"
+      className={`projectlink-stepper__indicator-btn projectlink-stepper__indicator-btn--${status}`}
       style={disableStepIndicators ? { pointerEvents: 'none', opacity: 0.5 } : {}}
       animate={status}
       initial={false}
@@ -273,12 +273,11 @@ function StepIndicator({ step, label, currentStep, onClickStep, disableStepIndic
       >
         {status === 'complete' ? (
           <CheckIcon className="projectlink-stepper__check-icon" />
-        ) : status === 'active' ? (
-          <span className="projectlink-stepper__step-number">{step}</span>
         ) : (
           <span className="projectlink-stepper__step-number">{step}</span>
         )}
       </motion.div>
+      <span className="projectlink-stepper__indicator-label">{label}</span>
     </motion.button>
   );
 }

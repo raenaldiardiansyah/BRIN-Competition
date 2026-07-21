@@ -2848,12 +2848,14 @@ button:disabled {
   background: #202a35;
 }
 
-.site-footer > div {
+.site-footer > div,
+.site-footer__inner > div {
   display: flex;
   gap: 18px;
 }
 
-.site-footer > div:first-child {
+.site-footer > div:first-child,
+.site-footer__inner > div:first-child {
   display: grid;
   gap: 4px;
 }

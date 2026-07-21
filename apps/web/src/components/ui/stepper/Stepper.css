@@ -93,24 +93,37 @@
   background-color: var(--primary-hover, #2563eb);
 }
 
-.projectlink-stepper__indicator {
+.projectlink-stepper__indicator-btn {
   border: none;
   background: transparent;
-  padding: 0;
+  padding: 4px 8px;
   cursor: pointer;
   outline: none;
   display: flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
+  gap: 12px;
   box-sizing: border-box;
-  transition: box-shadow 0.2s;
+  transition: opacity 0.2s;
 }
 
-.projectlink-stepper__indicator:focus-visible {
+.projectlink-stepper__indicator-btn:focus-visible .projectlink-stepper__indicator-inner {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+}
+
+.projectlink-stepper__indicator-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  transition: color 0.2s;
+}
+
+.projectlink-stepper__indicator-btn--active .projectlink-stepper__indicator-label {
+  color: var(--primary, #3b82f6);
+  font-weight: 700;
+}
+
+.projectlink-stepper__indicator-btn--complete .projectlink-stepper__indicator-label {
+  color: var(--text-dark, #1e293b);
 }
 
 .projectlink-stepper__indicator-inner {

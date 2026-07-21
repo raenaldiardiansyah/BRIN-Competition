@@ -4,9 +4,16 @@ import React, { Children, cloneElement, forwardRef, isValidElement, useEffect, u
 import gsap from 'gsap';
 import './CardSwap.css';
 
-export const Card = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { customClass?: string }>(
-  ({ customClass, ...rest }, ref) => (
-    <div ref={ref} {...rest} className={`project-card-swap__card ${customClass ?? ''} ${rest.className ?? ''}`.trim()} />
+export const Card = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { customClass?: string; isActive?: boolean }>(
+  ({ customClass, isActive, ...rest }, ref) => (
+    <div
+      ref={ref}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isActive}
+      {...rest}
+      className={`project-card-swap__card ${isActive ? 'project-card-swap__card--active' : ''} ${customClass ?? ''} ${rest.className ?? ''}`.trim()}
+    />
   )
 );
 Card.displayName = 'Card';
@@ -53,6 +60,7 @@ interface CardSwapProps {
   cardDistance?: number;
   verticalDistance?: number;
   delay?: number;
+  interactionPauseDuration?: number;
   pauseOnHover?: boolean;
   onActiveCardChange?: (originalIndex: number) => void;
   skewAmount?: number;
@@ -66,6 +74,7 @@ const CardSwap: React.FC<CardSwapProps> = ({
   cardDistance = 60,
   verticalDistance = 70,
   delay = 5000,
+  interactionPauseDuration = 10000,
   pauseOnHover = false,
   onActiveCardChange,
   skewAmount = 6,
@@ -73,14 +82,28 @@ const CardSwap: React.FC<CardSwapProps> = ({
   children
 }) => {
   const [isReduced, setIsReduced] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+
   const isAnimatingRef = useRef(false);
+  const isHoveredRef = useRef(false);
+  const isFocusWithinRef = useRef(false);
+  const manualPauseUntilRef = useRef<number>(0);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     setIsReduced(mediaQuery.matches);
     const listener = (e: MediaQueryListEvent) => setIsReduced(e.matches);
     mediaQuery.addEventListener('change', listener);
-    return () => mediaQuery.removeEventListener('change', listener);
+
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => {
+      mediaQuery.removeEventListener('change', listener);
+      window.removeEventListener('resize', checkMobile);
+    };
   }, []);
 
   const config = useMemo(() => {
@@ -114,45 +137,74 @@ const CardSwap: React.FC<CardSwapProps> = ({
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const container = useRef<HTMLDivElement>(null);
-  const isPausedRef = useRef(false);
+
+  const placeAllCardsFromCurrentOrder = () => {
+    const total = refs.length;
+    order.current.forEach((idx, i) => {
+      placeNow(refs[idx].current, makeSlot(i, cardDistance, verticalDistance, total), skewAmount, isReduced);
+    });
+  };
 
   // Initial placement using useLayoutEffect
   useLayoutEffect(() => {
-    const total = refs.length;
-    refs.forEach((r, i) => {
-      placeNow(r.current, makeSlot(i, cardDistance, verticalDistance, total), skewAmount, isReduced);
-    });
-  }, [refs, cardDistance, verticalDistance, skewAmount, isReduced]);
+    if (!isMobile) {
+      placeAllCardsFromCurrentOrder();
+    }
+  }, [refs, cardDistance, verticalDistance, skewAmount, isReduced, isMobile]);
 
-  const scheduleNextSwap = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (isReduced || isPausedRef.current) return;
+  const clearSwapTimer = () => {
+    if (timerRef.current !== null) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const scheduleNextSwap = (wait = delay) => {
+    clearSwapTimer();
+
+    if (isReduced || isMobile) return;
+    if (isHoveredRef.current) return;
+    if (isFocusWithinRef.current) return;
+    if (isAnimatingRef.current) return;
+
+    const remainingFreeze = manualPauseUntilRef.current - Date.now();
+
+    if (remainingFreeze > 0) {
+      timerRef.current = setTimeout(() => {
+        scheduleNextSwap(delay);
+      }, remainingFreeze);
+      return;
+    }
 
     timerRef.current = setTimeout(() => {
       swap();
-    }, delay);
+    }, wait);
   };
 
   const swap = () => {
-    if (order.current.length < 2 || isAnimatingRef.current) return;
+    if (order.current.length < 2 || isAnimatingRef.current || isMobile) return;
 
     isAnimatingRef.current = true;
     const [front, ...rest] = order.current;
     const elFront = refs[front].current;
 
+    // Reposition active cards to their correct slot before animating to normalize GSAP state
     tlRef.current?.kill();
+    placeAllCardsFromCurrentOrder();
+
     const tl = gsap.timeline({
       onComplete: () => {
         order.current = [...rest, front];
         isAnimatingRef.current = false;
-        onActiveCardChange?.(rest[0]);
-        scheduleNextSwap();
+        const newActive = rest[0];
+        setActiveCardIndex(newActive);
+        onActiveCardChange?.(newActive);
+        scheduleNextSwap(delay);
       }
     });
     tlRef.current = tl;
 
     if (isReduced) {
-      // In reduced motion, we do a simple crossfade swap instantly
       rest.forEach((idx, i) => {
         const el = refs[idx].current;
         const slot = makeSlot(i, cardDistance, verticalDistance, refs.length);
@@ -226,16 +278,24 @@ const CardSwap: React.FC<CardSwapProps> = ({
     if (idxInOrder === 0) return; // Already front
 
     isAnimatingRef.current = true;
-    if (timerRef.current) clearTimeout(timerRef.current);
+    clearSwapTimer();
+    
+    // Normalization: kill timeline and reset to normalized slots
     tlRef.current?.kill();
+    tlRef.current = null;
+    placeAllCardsFromCurrentOrder();
+
+    // Freeze autoplay on manual click
+    manualPauseUntilRef.current = Date.now() + interactionPauseDuration;
 
     const newOrder = [...order.current.slice(idxInOrder), ...order.current.slice(0, idxInOrder)];
     const tl = gsap.timeline({
       onComplete: () => {
         order.current = newOrder;
         isAnimatingRef.current = false;
+        setActiveCardIndex(clickedIdx);
         onActiveCardChange?.(clickedIdx);
-        scheduleNextSwap();
+        scheduleNextSwap(delay);
       }
     });
     tlRef.current = tl;
@@ -268,68 +328,130 @@ const CardSwap: React.FC<CardSwapProps> = ({
   };
 
   useEffect(() => {
-    // Schedule the first auto-swap (delayed by delay ms on mount, not instant)
-    scheduleNextSwap();
+    scheduleNextSwap(delay);
 
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      clearSwapTimer();
       tlRef.current?.kill();
+      tlRef.current = null;
     };
-  }, [cardDistance, verticalDistance, delay, config, isReduced]);
+  }, [cardDistance, verticalDistance, delay, config, isReduced, isMobile]);
 
   const handlePause = () => {
-    isPausedRef.current = true;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    tlRef.current?.pause();
+    isHoveredRef.current = true;
+    clearSwapTimer();
   };
 
   const handleResume = () => {
-    isPausedRef.current = false;
-    tlRef.current?.play();
-    scheduleNextSwap();
+    isHoveredRef.current = false;
+    scheduleNextSwap(delay);
+  };
+
+  const handleFocusIn = () => {
+    isFocusWithinRef.current = true;
+    clearSwapTimer();
   };
 
   const handleFocusOut = (event: FocusEvent) => {
     const nextTarget = event.relatedTarget as Node | null;
-    if (!nextTarget || !container.current?.contains(nextTarget)) {
-      handleResume();
+    if (nextTarget && container.current?.contains(nextTarget)) {
+      return;
     }
+    isFocusWithinRef.current = false;
+    scheduleNextSwap(delay);
   };
 
   useEffect(() => {
     const node = container.current;
-    if (!node) return;
+    if (!node || isMobile) return;
 
     if (pauseOnHover) {
       node.addEventListener('mouseenter', handlePause);
       node.addEventListener('mouseleave', handleResume);
-      node.addEventListener('focusin', handlePause);
-      node.addEventListener('focusout', handleFocusOut as any);
+      node.addEventListener('focusin', handleFocusIn);
+      node.addEventListener('focusout', handleFocusOut);
     }
 
     return () => {
       if (node) {
         node.removeEventListener('mouseenter', handlePause);
         node.removeEventListener('mouseleave', handleResume);
-        node.removeEventListener('focusin', handlePause);
-        node.removeEventListener('focusout', handleFocusOut as any);
+        node.removeEventListener('focusin', handleFocusIn);
+        node.removeEventListener('focusout', handleFocusOut);
       }
     };
-  }, [pauseOnHover]);
+  }, [pauseOnHover, isMobile]);
 
   const rendered = childArr.map((child, i) =>
     isValidElement(child)
       ? cloneElement(child as any, {
           key: i,
           ref: refs[i],
-          style: { width, height, ...((child.props as any).style ?? {}) },
+          style: { 
+            width: isMobile ? '100%' : width, 
+            height: isMobile ? 'auto' : height, 
+            ...((child.props as any).style ?? {}) 
+          },
+          isActive: order.current[0] === i,
           onClick: (e: React.MouseEvent) => {
             (child.props as any).onClick?.(e);
             promoteToFront(i);
+          },
+          onKeyDown: (e: React.KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              promoteToFront(i);
+            }
+            (child.props as any).onKeyDown?.(e);
           }
         })
       : child
   );
+
+  if (isMobile) {
+    const activeIdx = order.current[0];
+    const activeChild = rendered[activeIdx];
+
+    return (
+      <div ref={container} className="project-card-swap__container project-card-swap__container--mobile">
+        <div className="project-card-swap__mobile-card-wrapper">
+          {activeChild}
+        </div>
+        <div className="project-card-swap__mobile-nav">
+          <button
+            type="button"
+            className="pl-button-sm pl-button-secondary"
+            onClick={() => {
+              const last = order.current[order.current.length - 1];
+              const rest = order.current.slice(0, -1);
+              const newOrder = [last, ...rest];
+              order.current = newOrder;
+              setActiveCardIndex(last);
+              onActiveCardChange?.(last);
+            }}
+          >
+            ← Prev
+          </button>
+          <span className="project-card-swap__mobile-counter">
+            {activeIdx + 1} / {rendered.length}
+          </span>
+          <button
+            type="button"
+            className="pl-button-sm pl-button-secondary"
+            onClick={() => {
+              const [front, ...rest] = order.current;
+              const newOrder = [...rest, front];
+              order.current = newOrder;
+              setActiveCardIndex(rest[0]);
+              onActiveCardChange?.(rest[0]);
+            }}
+          >
+            Next →
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={container} className="project-card-swap__container" style={{ width, height }}>
