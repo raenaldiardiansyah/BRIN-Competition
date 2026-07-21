@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "@/styles/globals.css";
 import "@/styles/product-shell.css";
 import "@/styles/product-experiences.css";
+import "@/styles/shadcn.css";
 
 export const metadata: Metadata = {
   title: "ProjectLink — Proyek yang Membuktikan Kompetensi",
@@ -27,7 +28,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id">
-      <body>{children}</body>
+      <body>
+        {children}
+        <div id="pl-ui-portal-root"></div>
+      </body>
     </html>
   );
 }
