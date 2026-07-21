@@ -351,3 +351,156 @@ Merujuk ke `Verification Prompt P0-04` di `subscription-verification-prompts.md`
 
 **17. Files allowed to modify**
 NONE — Proses ini sepenuhnya bersifat *investigasi CLI* dan *read-only*.
+
+---
+
+## P0-B: Tailwind v4 Foundation, CSS Isolation, Scoped Tokens, and Portal Root
+
+**1. Tujuan**
+Menyiapkan fondasi CSS dan portal yang terisolasi untuk UI subscription baru tanpa menyebabkan regression pada navbar, homepage, atau komponen legacy.
+
+**2. Lokasi file dan route/parent**
+Kandidat awal (dokumen harus memverifikasi daftar final ini setelah audit awal):
+- `apps/web/postcss.config.mjs`
+- `apps/web/src/styles/shadcn.css`
+- `apps/web/src/app/layout.tsx`
+- `apps/web/package.json`
+- `pnpm-lock.yaml`
+
+*(Setiap file tambahan tidak diizinkan. Frasa umum seperti 'file lain jika diperlukan' ditolak. File tambahan wajib menjadi Stop Condition untuk persetujuan.)*
+
+**3. Official references**
+- Tailwind v4 Documentation.
+
+**4. Data source**
+Not applicable.
+
+**5. shadcn components**
+Hanya fondasi CSS dan portal. Tidak ada instalasi primitive komponen pada tahap ini.
+
+**6. React Bits**
+Not applicable.
+
+**7. Phosphor icons**
+Not applicable.
+
+**8. Struktur visual/output**
+P0-B tidak membuat halaman product final.
+Expected result P0-B harus berupa static and compilation proof:
+- PostCSS memproses Tailwind v4;
+- theme dan utilities terkompilasi;
+- prefix aktual dapat dibuktikan;
+- source scanning dapat dibuktikan;
+- tidak ada Preflight;
+- tidak ada global reset;
+- `.pl-ui-scope` berisi scoped tokens;
+- portal root tersedia;
+- existing application build tetap berhasil.
+
+Visual render proof ditunda ke P0-C ketika core components dibuat.
+
+**9. Interaksi**
+Not applicable.
+
+**10. State**
+Not applicable.
+
+**11. Responsive behavior**
+Not applicable.
+
+**12. Accessibility**
+Not applicable.
+
+**13. Styling constraints**
+- Tailwind theme dan utilities tanpa Preflight.
+- Class Tailwind baru menggunakan prefix aktual berdasarkan syntax Tailwind v4.
+- CSS legacy tetap berada di luar scope.
+- Import CSS satu kali dari root layout.
+- Homepage existing tidak boleh berubah secara visual.
+- **.pl-ui-scope containment contract:**
+  - design tokens subscription hanya didefinisikan di `.pl-ui-scope`;
+  - seluruh komponen UI baru nantinya wajib berada di bawah ancestor `.pl-ui-scope`;
+  - existing navbar, homepage, dan legacy UI tidak dibungkus `.pl-ui-scope`;
+  - Tailwind source scanning hanya mencakup source UI baru;
+  - tidak boleh menambahkan prefixed utility class ke legacy components pada P0-B;
+  - jangan mengklaim seluruh generated Tailwind utility secara otomatis scoped oleh parent selector;
+  - containment dibuktikan melalui token scope, source scan, dan absence of utility usage pada legacy source.
+
+Styling contract:
+```css
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme) prefix(tw);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(tw) source(none);
+
+@source "../components/shadcn";
+@source "../components/subscription";
+@source "../components/prototype/product-org-billing.tsx";
+```
+*(Syntax final tidak boleh diasumsikan benar sebelum diverifikasi melalui Tailwind v4 aktual).*
+
+**14. Forbidden changes (Hal yang dilarang)**
+- JANGAN mengimpor Tailwind Preflight.
+- JANGAN menambahkan global reset.
+- JANGAN mengubah style `html`, `body`, `button`, `a`, `input`, atau heading secara global.
+- Perubahan yang diizinkan pada `apps/web/src/app/layout.tsx` HANYA:
+  1. import `shadcn.css` tepat satu kali;
+  2. menambahkan container: `<div id="pl-ui-portal-root"></div>`.
+- JANGAN membungkus seluruh aplikasi dengan `.pl-ui-scope`.
+- JANGAN memindahkan navbar atau children.
+- JANGAN mengubah metadata atau provider.
+- JANGAN menambahkan class global pada `html` atau `body`.
+- JANGAN memberikan `aria-hidden="true"` pada portal root.
+- JANGAN mengubah layout structure selain penyisipan portal container yang tidak memengaruhi flow.
+- JANGAN mengubah file:
+  - `apps/web/src/components/ui/`
+  - `apps/web/src/components/layout/`
+  - navbar components
+  - existing homepage components
+  - subscription page
+  - pricing page
+  - organization billing page
+
+*Forbidden Dependencies:*
+- `lucide-react`
+- `@radix-ui/*`
+- icon library selain Phosphor
+- Tailwind v3
+- dependency tambahan yang tidak tercantum
+
+**15. Acceptance criteria**
+- Melakukan audit dependency Tailwind v4 dan PostCSS yang dibutuhkan.
+- Menginstal dependency yang secara eksplisit disetujui (Allowed: `tailwindcss` v4, `@tailwindcss/postcss`).
+- Base UI tidak diinstal pada P0-B. Base UI ditunda sampai execution unit interactive primitives benar-benar membutuhkannya.
+- Mengonfigurasi `@tailwindcss/postcss`.
+- Menyiapkan file CSS terisolasi dengan scoped design tokens.
+- Mengidentifikasi prefix aktual.
+- Portal root `<div id="pl-ui-portal-root"></div>` terpasang di root layout tanpa memengaruhi layout dan kompatibel dengan Dialog/Drawer.
+- Regression verification navbar dan homepage berhasil (tidak ada perubahan).
+- Build dan TypeScript verification berhasil.
+
+*Stop Conditions (Wajib berhenti jika terjadi):*
+- Tailwind yang terdeteksi adalah v3.
+- Setup membutuhkan `tailwind.config.*`.
+- CLI atau package menambahkan Preflight.
+- Global element selector berubah.
+- Navbar atau homepage berubah.
+- Legacy `components/ui/` berubah.
+- Lucide atau Radix ditambahkan.
+- Prefix tidak dapat dibuktikan.
+- `.pl-ui-scope` tidak dapat membatasi token.
+- Portal root memengaruhi layout.
+- File di luar allowed list perlu diubah.
+- Build existing gagal sebelum implementasi.
+- Dependency versions bertabrakan dengan workspace.
+
+**16. Verification**
+Merujuk ke `Verification Prompt P0-B` di `subscription-verification-prompts.md`.
+
+**17. Files allowed to modify**
+Hanya 5 target file yang telah diaudit:
+- `apps/web/postcss.config.mjs`
+- `apps/web/src/styles/shadcn.css`
+- `apps/web/src/app/layout.tsx`
+- `apps/web/package.json`
+- `pnpm-lock.yaml`

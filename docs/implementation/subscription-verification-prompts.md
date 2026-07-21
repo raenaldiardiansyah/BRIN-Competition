@@ -142,3 +142,60 @@ P0-04 adalah proses read-only terstruktur untuk menemukan kandidat *official opa
 - Evaluasi Ikon ditaati secara mutlak (Phosphor only, selebihnya ditolak).
 - Repositori (sebelum dan sesudah) dibuktikan mematuhi "No repository mutation observed berdasarkan Git pre-check dan post-check".
 - Agen tidak membuat commit dan berhenti untuk meminta konfirmasi.
+
+---
+
+## Verification P0-B: Tailwind v4 Foundation, CSS Isolation, Scoped Tokens, and Portal Root
+
+**Konteks Verifikasi:**
+P0-B memastikan fondasi CSS Tailwind v4, isolasi melalui `.pl-ui-scope`, dan keberadaan *portal root* dapat diimplementasikan secara aman tanpa memicu regresi pada UI legacy, global selector, maupun konfigurasi workspace.
+
+**Langkah Validasi:**
+
+### Sebelum Implementasi (Pre-check)
+1. Jalankan pemeriksaan status Git dan build dengan prosedur berikut:
+   - Baca field `name` dari `apps/web/package.json`.
+   - Gunakan actual workspace package name:
+     ```bash
+     git status --short
+     git diff --check
+     git diff --stat
+     pnpm --filter "<actual-package-name>" build
+     ```
+   - Jika filter workspace tidak cocok, gunakan: `pnpm --dir apps/web build`
+   - Jangan mengubah field package name untuk membuat verification berhasil.
+
+### Setelah Implementasi (Post-check)
+2. Jalankan pemeriksaan ulang untuk Git dan build dengan prosedur yang sama:
+   ```bash
+   git status --short
+   git diff --check
+   git diff --stat
+   pnpm --filter "<actual-package-name>" build
+   ```
+   (Atau `pnpm --dir apps/web build` jika fallback digunakan).
+3. Lakukan pengauditan ketat terhadap parameter berikut (Setiap temuan wajib berstatus: `PASS`, `RISK`, `BLOCKED`, atau `NOT FOUND`):
+   - **Dependency delta:** Pastikan hanya package Tailwind v4 dan PostCSS yang disetujui yang ditambahkan.
+   - **Lockfile delta:** Evaluasi perubahan `pnpm-lock.yaml`.
+   - **PostCSS config:** Verifikasi konfigurasi `@tailwindcss/postcss`.
+   - **Tailwind version:** Buktikan instalasi adalah versi 4.x.
+   - **CSS import order:** Periksa lokasi impor CSS baru di `layout.tsx`.
+   - **Prefix proof:** Pastikan prefix berjalan sesuai syntax v4.
+   - **Source scanning proof:** Verifikasi aturan `@source` hanya melingkupi UI baru.
+   - **Absence of Preflight:** Pastikan *global reset* Tailwind dinonaktifkan sepenuhnya.
+   - **Absence of global reset:** Pastikan tidak ada injeksi styling pada elemen bawaan seperti `body` atau `a`.
+   - **`.pl-ui-scope` containment:** Buktikan utilitas Tailwind terikat pada ruang lingkup ini.
+   - **Portal root existence:** Periksa ketersediaan `#pl-ui-portal-root` di *root layout*.
+   - **Navbar regression:** Pastikan navbar tidak mengalami perubahan layout/gaya (no mutation).
+   - **Homepage regression:** Pastikan homepage existing tidak terpengaruh (no mutation).
+   - **No mutation pada legacy UI:** Pastikan isi folder `components/ui` legacy tidak disentuh.
+   - **No Lucide:** Pastikan tidak terinstal dependensi `lucide-react`.
+   - **No Radix:** Pastikan tidak terinstal dependensi `@radix-ui/*` selain Base UI.
+   - **TypeScript/build result:** Build harus lolos tanpa error tsc.
+
+**Exit Criteria:**
+- Verifikasi sebelum dan sesudah eksekusi terlaporkan sepenuhnya.
+- Laporan status (`PASS`, `RISK`, dll) untuk seluruh parameter audit tersedia.
+- Build Next.js dan TypeScript berhasil setelah fondasi disisipkan.
+- Temporary proof (jika ada) terhapus sebelum laporan diserahkan, kecuali dinyatakan eksplisit.
+- Agen berhenti dan menunggu konfirmasi sebelum melanjutkan (tidak ada eksekusi P0-C/komponen).
