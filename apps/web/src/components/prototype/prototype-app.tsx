@@ -2078,6 +2078,7 @@ export function PrototypeApp() {
         <ReturningUserHome
           recommendationHidden={demo.recommendationHidden}
           onHideRecommendation={() => updateDemo({ recommendationHidden: !demo.recommendationHidden })}
+          subscription={subscription}
         />
       ) : (
         <NewUserHome

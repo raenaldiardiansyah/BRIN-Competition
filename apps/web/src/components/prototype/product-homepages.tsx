@@ -28,6 +28,7 @@ import ProjectLinkFolder from "../ui/projectlink-folder/ProjectLinkFolder";
 import CardSwap, { Card } from "../ui/card-swap/CardSwap";
 import Stepper, { Step } from "../ui/stepper/Stepper";
 import { featuredProjects, FeaturedProject, OpenNeed } from "../../data/guest-homepage-projects";
+import { SubscriptionData, deriveAIUsageStatus } from "../../types/domain/subscription";
 
 type FolderId = "project" | "contribution" | "evidence" | "matching" | "collaboration";
 
@@ -48,6 +49,7 @@ type HomeProps = {
   onFirstValue?: () => void;
   onHideRecommendation?: () => void;
   recommendationHidden?: boolean;
+  subscription?: SubscriptionData;
 };
 
 function Anchor({
@@ -170,6 +172,109 @@ function usePrototypeAuth() {
     login,
     logout
   };
+}
+
+function ReturningSubscriptionSummary({ subscription }: { subscription: SubscriptionData }) {
+  if (!subscription || subscription.plan === "none" || subscription.plan === "organization" || subscription.plan === "enterprise") return null;
+
+  const isPro = subscription.plan === "pro";
+  const planName = isPro ? "Pro Individual" : "Free Core";
+  const aiStatus = deriveAIUsageStatus(subscription.ai.usage);
+  const { used, limit, resetAt } = subscription.ai.usage;
+  
+  const isCanceledAtPeriodEnd = subscription.status === "canceled" && subscription.cancelAtPeriodEnd;
+  const isFullyCanceled = subscription.status === "canceled" && !subscription.cancelAtPeriodEnd;
+  const isPastDue = subscription.status === "past_due" || (subscription.paymentStatus === "failed" && subscription.plan !== "free");
+  
+  const formatDate = (isoStr?: string) => isoStr ? new Date(isoStr).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }) : "-";
+
+  let ctaLabel = isPro ? "Kelola paket" : "Lihat paket";
+  let ctaHref = isPro ? "/subscription" : "/subscription#plans";
+  let statusBadge = null;
+  let statusMessage = null;
+  
+  if (isPastDue) {
+    statusBadge = <span className="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded tw:text-sm tw:font-medium tw:bg-red-100 tw:text-red-800">Past Due</span>;
+    statusMessage = "Tagihan terakhir gagal diproses.";
+    ctaLabel = "Lihat status tagihan";
+    ctaHref = "/subscription#billing-status";
+  } else if (isCanceledAtPeriodEnd) {
+    statusBadge = <span className="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded tw:text-sm tw:font-medium tw:bg-slate-100 tw:text-slate-800">Dijadwalkan Berhenti</span>;
+    statusMessage = `Aktif sampai ${formatDate(subscription.currentPeriodEnd || subscription.cancelDate)}.`;
+    ctaLabel = "Lihat detail";
+    ctaHref = "/subscription";
+  } else if (isFullyCanceled) {
+    statusBadge = <span className="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded tw:text-sm tw:font-medium tw:bg-slate-100 tw:text-slate-800">Dibatalkan</span>;
+    statusMessage = "Langganan telah dibatalkan.";
+    ctaLabel = "Lihat paket";
+    ctaHref = "/subscription#plans";
+  } else if (aiStatus === "limit_reached") {
+    statusBadge = <span className="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded tw:text-sm tw:font-medium tw:bg-red-100 tw:text-red-800">Kuota Habis</span>;
+    statusMessage = `AI dibatasi hingga ${formatDate(resetAt)}.`;
+    ctaLabel = isPro ? "Lihat penggunaan" : "Lihat paket";
+    ctaHref = isPro ? "/subscription#ai-usage" : "/subscription#plans";
+  } else if (aiStatus === "near_limit") {
+    statusBadge = <span className="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded tw:text-sm tw:font-medium tw:bg-amber-100 tw:text-amber-800">Hampir Habis</span>;
+    statusMessage = `Tersisa ${limit ? limit - used : 0} penggunaan AI bulan ini.`;
+    ctaLabel = isPro ? "Lihat penggunaan" : "Lihat paket";
+    ctaHref = isPro ? "/subscription#ai-usage" : "/subscription#plans";
+  } else if (isPro) {
+    statusBadge = <span className="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded tw:text-sm tw:font-medium tw:bg-emerald-100 tw:text-emerald-800">Aktif</span>;
+    statusMessage = `Aktif hingga ${formatDate(subscription.renewalDate)}.`;
+  } else {
+    statusBadge = <span className="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded tw:text-sm tw:font-medium tw:bg-slate-100 tw:text-slate-600">Free</span>;
+    statusMessage = `Kuota AI direset pada ${formatDate(resetAt)}.`;
+  }
+
+  const isUnlimited = limit === null;
+  const displayLimit = isUnlimited ? "∞" : limit;
+  const ariaLimit = isUnlimited ? "Tak terbatas" : limit;
+  const usagePercentage = (!isUnlimited && limit) ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+
+  return (
+    <div className="pl-returning-subscription-summary pl-ui-scope tw:bg-white tw:border tw:border-slate-200 tw:rounded-xl tw:p-4 tw:shadow-sm tw:w-full tw:max-w-[320px] tw:flex-shrink-0">
+      <div className="tw:flex tw:items-center tw:justify-between tw:mb-2">
+        <h3 className="tw:text-base tw:font-bold tw:text-slate-900 tw:flex tw:items-center tw:gap-1.5">
+          {isPro ? <Sparkle size={18} weight="duotone" className="tw:text-blue-600" /> : <RocketLaunch size={18} weight="duotone" className="tw:text-slate-500" />}
+          {planName}
+        </h3>
+        {statusBadge}
+      </div>
+      
+      {statusMessage && (
+        <p className="tw:text-sm tw:text-slate-500 tw:mb-4">{statusMessage}</p>
+      )}
+
+      <div className="tw:mb-5">
+        <div className="tw:flex tw:justify-between tw:text-sm tw:mb-2">
+          <span className="tw:text-slate-600">Penggunaan AI</span>
+          <span className="tw:font-medium tw:text-slate-900" aria-label={`Terpakai ${used} dari ${ariaLimit}`}>{used} / {displayLimit}</span>
+        </div>
+        {!isUnlimited && (
+          <div 
+            className="tw:h-2 tw:w-full tw:bg-slate-100 tw:rounded-full tw:overflow-hidden"
+            role="progressbar"
+            aria-valuenow={used}
+            aria-valuemin={0}
+            aria-valuemax={limit}
+            aria-label="Penggunaan AI bulan ini"
+          >
+            <div 
+              className={`tw:h-full tw:rounded-full tw:transition-all ${aiStatus === 'limit_reached' ? 'tw:bg-red-500' : aiStatus === 'near_limit' ? 'tw:bg-amber-500' : 'tw:bg-blue-600'}`}
+              style={{ width: `${usagePercentage}%` }}
+            />
+          </div>
+        )}
+      </div>
+
+      <Anchor 
+        href={ctaHref}
+        className="tw:inline-flex tw:items-center tw:justify-center tw:w-full tw:min-h-[44px] tw:px-4 tw:py-2 tw:text-sm tw:font-semibold tw:text-slate-700 tw:bg-slate-50 hover:tw:bg-slate-100 tw:border tw:border-slate-200 tw:rounded-lg tw:transition-colors tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400 tw:whitespace-nowrap"
+      >
+        {ctaLabel}
+      </Anchor>
+    </div>
+  );
 }
 
 export function GuestHome() {
@@ -1288,6 +1393,7 @@ export function NewUserHome({ onFirstValue }: HomeProps) {
 export function ReturningUserHome({
   onHideRecommendation,
   recommendationHidden,
+  subscription,
 }: HomeProps) {
   const [completedActions, setCompletedActions] = useState<string[]>([]);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
@@ -1332,12 +1438,17 @@ export function ReturningUserHome({
   return (
     <div className="pl-home pl-dashboard">
       <section className="pl-welcome pl-welcome-returning">
-        <div>
+        <div className="pl-welcome-header">
           <p className="pl-eyebrow">Minggu ini di ProjectLink</p>
           <h1>Selamat datang kembali, Maya.</h1>
           <p>{pendingActions.length ? `Ada ${pendingActions.length} hal yang layak Anda tinjau sebelum melanjutkan pekerjaan.` : "Semua tindakan utama sudah selesai."}</p>
+          <div className="tw:mt-6">
+            <Anchor href="/notifications" className="pl-button pl-button-primary">Tinjau semua tindakan</Anchor>
+          </div>
         </div>
-        <Anchor href="/notifications" className="pl-button pl-button-primary">Tinjau semua tindakan</Anchor>
+        {subscription && (
+          <ReturningSubscriptionSummary subscription={subscription} />
+        )}
       </section>
 
       {pendingActions.length ? <section className="pl-action-grid">
