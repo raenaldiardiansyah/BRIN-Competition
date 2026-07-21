@@ -32,6 +32,13 @@ import type { SearchScope } from "@/dummy/registry";
 import type { SubscriptionPlan, SubscriptionSessionOverride } from "@/types/domain/subscription";
 import { GlobalStatusAnnouncer } from "./accessibility";
 import { SubscriptionPage } from "../subscription/subscription-page";
+import { resolveSubscriptionState } from "@/dummy/subscription-fixtures";
+import { 
+  guestSubscription, 
+  newUserSubscription, 
+  returningUserSubscription, 
+  organizationSubscription 
+} from "@/dummy/subscription-fixtures";
 
 type Persona = "guest" | "new" | "returning" | "organization";
 type SimulatedState = "normal" | "loading" | "empty" | "error";
@@ -2028,6 +2035,14 @@ export function PrototypeApp() {
     [nextRouter],
   );
 
+  const subscription = useMemo(() => {
+    let fixture = guestSubscription;
+    if (demo.persona === "new") fixture = newUserSubscription;
+    if (demo.persona === "returning") fixture = returningUserSubscription;
+    if (demo.persona === "organization") fixture = organizationSubscription;
+    return resolveSubscriptionState(demo.persona, fixture, demo.subscriptionOverrides || {});
+  }, [demo]);
+
   const page = useMemo(() => {
     if (!hydrated) {
       return (
@@ -2081,7 +2096,15 @@ export function PrototypeApp() {
     if (pathname === "/collaboration/new") return <CollaborationForm demo={demo} updateDemo={updateDemo} />;
     if (pathname === "/notifications") return <NotificationsPage demo={demo} updateDemo={updateDemo} />;
     if (pathname === "/settings/privacy") return <PrivacyPage />;
-    if (pathname === "/subscription") return <SubscriptionPage />;
+    if (pathname === "/subscription") return <SubscriptionPage 
+          subscription={subscription} 
+          onOverrideChange={(patch) => updateDemo({ 
+            subscriptionOverrides: { 
+              ...demo.subscriptionOverrides, 
+              ...patch 
+            } 
+          })} 
+        />;
     if (pathname.startsWith("/org/nusantara")) {
       const section = pathname.replace("/org/nusantara", "").replace(/^\//, "");
       return <OrganizationPage section={section} demo={demo} updateDemo={updateDemo} />;
@@ -2098,7 +2121,7 @@ export function PrototypeApp() {
       return <PublicEntityExperience scope="opportunities" slug={slug === "urban-heat" ? "urban-heat-mapping" : slug} />;
     }
     return <NotFoundPage />;
-  }, [demo, hydrated, pathname, prototypeState, router, searchParams, searchScope, updateDemo]);
+  }, [demo, hydrated, pathname, prototypeState, router, searchParams, searchScope, updateDemo, subscription]);
 
   return (
     <AppShell

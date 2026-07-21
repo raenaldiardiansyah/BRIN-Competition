@@ -109,7 +109,7 @@ export const scenarioFixtures = {
   proPastDue: {
     ...returningUserSubscription,
     status: "past_due",
-    paymentStatus: "past_due"
+    paymentStatus: "failed"
   } as SubscriptionData,
   organizationMember: {
     ...organizationSubscription,
@@ -147,6 +147,18 @@ export function resolveSubscriptionState(
     result.ai.usage.used = Math.max(0, Math.min(result.ai.usage.limit, result.ai.usage.used + overrides.aiUsageDelta));
   }
 
+  if (overrides.cancelAtPeriodEnd) {
+    result.status = 'canceled';
+    result.paymentStatus = 'current';
+    result.cancelAtPeriodEnd = true;
+    result.currentPeriodEnd = overrides.currentPeriodEndOverride || fixture.currentPeriodEnd || fixture.renewalDate;
+  } else if (overrides.planOverride === 'pro') {
+    // If upgrading to pro, clear any cancellations and set to active
+    result.status = 'active';
+    result.paymentStatus = 'current';
+    result.cancelAtPeriodEnd = false;
+  }
+
   if (overrides.scenarioOverride && overrides.scenarioOverride !== 'default') {
     switch (overrides.scenarioOverride) {
       case 'near_limit':
@@ -167,7 +179,9 @@ export function resolveSubscriptionState(
         break;
       case 'cancel_scheduled':
         result.status = 'canceled';
-        result.cancelDate = result.renewalDate || new Date().toISOString();
+        result.paymentStatus = 'current';
+        result.cancelAtPeriodEnd = true;
+        result.currentPeriodEnd = fixture.currentPeriodEnd || fixture.renewalDate;
         break;
       case 'expired':
         result.status = 'expired';

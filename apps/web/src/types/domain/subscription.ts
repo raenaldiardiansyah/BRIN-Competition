@@ -71,6 +71,8 @@ export interface SubscriptionData {
   billingCycle?: BillingCycle;  // optional: Free has none
   renewalDate?: string;        // ISO date, optional
   cancelDate?: string;         // ISO date, optional
+  cancelAtPeriodEnd?: boolean;
+  currentPeriodEnd?: string;   // ISO date, when the access actually stops
 
   ai: {
     usage: AIUsage;
@@ -122,4 +124,6 @@ export interface SubscriptionSessionOverride {
   planOverride?: SubscriptionPlan;
   aiUsageDelta?: number;
   cancelReason?: string;
+  cancelAtPeriodEnd?: boolean;
+  currentPeriodEndOverride?: string | null;
 }

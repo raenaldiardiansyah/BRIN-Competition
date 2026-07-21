@@ -1,27 +1,84 @@
-import React from "react";
-import { Check, Info, X, Buildings } from "@phosphor-icons/react";
-import { tierMatrix, AI_FEATURE_MATRIX } from "@/data/subscription-tiers";
-import { returningUserSubscription } from "@/dummy/subscription-fixtures";
+"use client";
 
-export function SubscriptionPage() {
-  const currentPlan = returningUserSubscription;
+import React, { useState } from "react";
+import { Check, Info, X, Buildings, WarningCircle } from "@phosphor-icons/react";
+import { tierMatrix, AI_FEATURE_MATRIX } from "@/data/subscription-tiers";
+import { SubscriptionData, SubscriptionSessionOverride, AIUsageStatus } from "@/types/domain/subscription";
+import { BillingCycleToggle, UpgradeDialog, CancelDialog, BillingCycleSelection } from "./subscription-controls";
+import { SubscriptionNotifications } from "./subscription-notifications";
+
+export function SubscriptionPage({ 
+  subscription, 
+  onOverrideChange 
+}: { 
+  subscription?: SubscriptionData;
+  onOverrideChange?: (patch: Partial<SubscriptionSessionOverride>) => void;
+}) {
+  // Graceful fallback if opened outside prototype demo wiring
+  if (!subscription) return null;
+
+  const currentPlan = subscription;
   const currentTier = tierMatrix[currentPlan.plan === "none" ? "free" : currentPlan.plan];
-  const isMonthly = currentPlan.billingCycle === "monthly";
+  
+  // Local state for billing cycle pricing display
+  const [billingCycle, setBillingCycle] = useState<BillingCycleSelection>("monthly");
 
   // AI Usage calculations
   const aiUsed = currentPlan.ai.usage.used;
   const aiLimit = currentPlan.ai.usage.limit || 1;
   const aiPercentage = Math.min(100, Math.round((aiUsed / aiLimit) * 100));
+  const aiStatus = (currentPlan.ai.usage.statusOverride || (aiUsed >= aiLimit ? "limit_reached" : (aiPercentage >= 80 ? "near_limit" : "normal"))) as AIUsageStatus;
 
   // 7 Canonical AI Features
   const features = Object.values(AI_FEATURE_MATRIX);
+  
+  // Status flags
+  const isPastDue = currentPlan.status === "past_due";
+  const isCanceled = currentPlan.status === "canceled";
+
+  // Actions
+  const handleUpgradeToPro = () => {
+    if (onOverrideChange) {
+      onOverrideChange({
+        planOverride: "pro",
+        scenarioOverride: "default", // Clear scenarios
+        cancelAtPeriodEnd: false,
+        cancelReason: undefined,
+      });
+    }
+  };
+
+  const handleCancelPlan = (reason: string | null) => {
+    if (onOverrideChange) {
+      onOverrideChange({
+        cancelAtPeriodEnd: true,
+        cancelReason: reason || undefined,
+      });
+    }
+  };
 
   return (
     <div className="pl-ui-scope">
+      <SubscriptionNotifications 
+        usageState={aiStatus}
+        plan={currentPlan.plan}
+        used={aiUsed}
+        limit={currentPlan.ai.usage.limit}
+      />
+
       {/* Prototype Notice - subtle */}
       <div className="tw:bg-slate-50 tw:border-b tw:border-slate-200 tw:text-slate-600 tw:px-4 tw:py-2 tw:text-xs tw:text-center tw:font-medium">
         Mode Prototype: Data simulasi. Perubahan paket belum diproses secara nyata pada tahap ini.
       </div>
+
+      {isPastDue && (
+        <section id="billing-status" tabIndex={-1} className="tw:bg-red-50 tw:border-b tw:border-red-200 tw:px-4 tw:py-3 tw:flex tw:items-center tw:justify-center tw:gap-2 tw:scroll-mt-20 tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-inset focus-visible:tw:ring-red-400">
+          <WarningCircle className="tw:w-5 tw:h-5 tw:text-red-600" weight="fill" />
+          <p className="tw:text-sm tw:font-medium tw:text-red-900">
+            Pembayaran terakhir Anda gagal. Akses Pro akan ditangguhkan. <a href="#" className="tw:underline hover:tw:text-red-700">Lihat status tagihan</a> atau <a href="#" className="tw:underline hover:tw:text-red-700">Hubungi dukungan</a>.
+          </p>
+        </section>
+      )}
 
       <div className="tw:max-w-5xl tw:mx-auto tw:px-4 tw:py-8 tw:md:py-12">
         
@@ -38,20 +95,30 @@ export function SubscriptionPage() {
 
         {/* Current Plan Card */}
         <section className="tw:bg-white tw:rounded-xl tw:border tw:border-slate-200 tw:p-6 tw:mb-12 tw:shadow-sm">
-          <div className="tw:flex tw:flex-col tw:md:flex-row tw:md:items-center tw:justify-between tw:gap-8">
+          <div className="tw:flex tw:flex-col tw:md:flex-row tw:md:items-start tw:justify-between tw:gap-8">
             {/* Left side: Plan info */}
             <div className="tw:flex-1">
               <div className="tw:flex tw:items-center tw:gap-3 tw:mb-2">
                 <p className="tw:text-sm tw:font-semibold tw:text-slate-500 tw:uppercase tw:tracking-wider">Paket Saat Ini</p>
-                <span className="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded tw:text-xs tw:font-bold tw:bg-green-100 tw:text-green-800">
-                  AKTIF
-                </span>
+                {isCanceled ? (
+                  <span className="tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded tw:text-xs tw:font-bold tw:bg-amber-100 tw:text-amber-800">
+                    DIJADWALKAN BERHENTI
+                  </span>
+                ) : (
+                  <span className={`tw:inline-flex tw:items-center tw:px-2 tw:py-0.5 tw:rounded tw:text-xs tw:font-bold ${isPastDue ? 'tw:bg-red-100 tw:text-red-800' : 'tw:bg-green-100 tw:text-green-800'}`}>
+                    {isPastDue ? 'PAST DUE' : 'AKTIF'}
+                  </span>
+                )}
               </div>
               <h2 className="tw:text-2xl tw:font-bold tw:text-slate-900 tw:mb-1">
                 {currentTier.label}
               </h2>
               <p className="tw:text-sm tw:text-slate-600">
-                Siklus {isMonthly ? "Bulanan" : "Tahunan"}. Perpanjangan pada {new Date(currentPlan.renewalDate!).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })}.
+                {isCanceled ? (
+                  <>Akses Pro Anda tetap aktif sampai <strong>{new Date(currentPlan.currentPeriodEnd || currentPlan.renewalDate!).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })}</strong>.</>
+                ) : (
+                  <>Siklus {currentPlan.billingCycle === "monthly" ? "Bulanan" : "Tahunan"}. Perpanjangan pada {new Date(currentPlan.renewalDate!).toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })}.</>
+                )}
               </p>
             </div>
             
@@ -60,37 +127,63 @@ export function SubscriptionPage() {
               <div className="tw:bg-slate-50 tw:rounded-lg tw:border tw:border-slate-200 tw:p-4">
                 <div className="tw:flex tw:justify-between tw:items-center tw:mb-2">
                   <span className="tw:text-sm tw:font-semibold tw:text-slate-900">Kuota AI</span>
-                  <span className="tw:text-sm tw:font-medium tw:text-slate-600">{aiUsed} dari {aiLimit} ({aiPercentage}%)</span>
+                  <span className="tw:text-sm tw:font-medium tw:text-slate-600">{aiUsed} dari {currentPlan.ai.usage.limit || '∞'} ({aiPercentage}%)</span>
                 </div>
-                <div className="tw:w-full tw:bg-slate-200 tw:rounded-full tw:h-2">
+                <div className="tw:w-full tw:bg-slate-200 tw:rounded-full tw:h-2 tw:mb-2">
                   <div 
-                    className="tw:bg-slate-900 tw:h-2 tw:rounded-full" 
+                    className={`tw:h-2 tw:rounded-full ${aiStatus === 'limit_reached' ? 'tw:bg-red-600' : (aiStatus === 'near_limit' ? 'tw:bg-amber-500' : 'tw:bg-slate-900')}`} 
                     style={{ width: `${aiPercentage}%` }}
                   ></div>
                 </div>
+                {/* Persistent warnings for AI Usage */}
+                {aiStatus === "near_limit" && (
+                  <p className="tw:text-xs tw:text-amber-700 tw:font-medium tw:mt-2">
+                    Kuota AI hampir habis. Gunakan dengan bijak.
+                  </p>
+                )}
+                {aiStatus === "limit_reached" && (
+                  <p className="tw:text-xs tw:text-red-600 tw:font-medium tw:mt-2">
+                    Kuota AI bulan ini telah habis. Akan di-reset bulan depan.
+                  </p>
+                )}
               </div>
               
               <div className="tw:flex tw:flex-col tw:gap-2">
-                <button 
-                  disabled 
-                  className="tw:w-full tw:md:w-auto tw:bg-slate-100 tw:text-slate-500 tw:border tw:border-slate-200 tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-6 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:cursor-not-allowed"
-                >
-                  Kelola paket
-                </button>
-                <p className="tw:text-xs tw:text-slate-500 tw:text-center tw:md:text-left">
-                  Simulasi pengelolaan tersedia pada Phase 3B.
-                </p>
+                {currentPlan.plan === "pro" && !isCanceled && !isPastDue && (
+                  <CancelDialog 
+                    trigger={
+                      <button className="tw:w-full tw:md:w-auto tw:bg-white tw:text-slate-900 tw:border tw:border-slate-300 tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-6 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:transition-colors hover:tw:bg-slate-50 tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400">
+                        Batalkan Paket
+                      </button>
+                    }
+                    onConfirm={handleCancelPlan}
+                    currentPeriodEnd={currentPlan.currentPeriodEnd || currentPlan.renewalDate}
+                  />
+                )}
+                {currentPlan.plan === "pro" && isCanceled && (
+                  <button className="tw:w-full tw:md:w-auto tw:bg-slate-100 tw:text-slate-500 tw:border tw:border-slate-200 tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-6 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:cursor-not-allowed">
+                    Paket telah dibatalkan
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </section>
 
         {/* Pricing Cards */}
-        <section className="tw:mb-16">
+        <section id="plans" tabIndex={-1} className="tw:mb-16 tw:scroll-mt-20 tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400 focus-visible:tw:rounded-xl">
+          <div className="tw:flex tw:justify-center tw:mb-8">
+            <BillingCycleToggle value={billingCycle} onChange={setBillingCycle} />
+          </div>
+
           <div className="tw:grid tw:md:grid-cols-2 tw:gap-6 tw:max-w-4xl tw:mx-auto">
-            
             {/* Free Core */}
             <div className="tw:bg-white tw:rounded-xl tw:border tw:border-slate-200 tw:p-6 tw:shadow-sm tw:flex tw:flex-col">
+              {currentPlan.plan === "free" && (
+                <div className="tw:inline-block tw:bg-slate-100 tw:text-slate-700 tw:px-3 tw:py-1 tw:rounded-md tw:text-xs tw:font-bold tw:uppercase tw:tracking-wider tw:mb-4 tw:self-start">
+                  Paket Anda
+                </div>
+              )}
               <h3 className="tw:text-xl tw:font-bold tw:text-slate-900">{tierMatrix.free.label}</h3>
               <p className="tw:text-sm tw:text-slate-600 tw:mt-1 tw:mb-4 tw:min-h-[40px]">{tierMatrix.free.tagline}</p>
               
@@ -114,27 +207,26 @@ export function SubscriptionPage() {
                   </li>
                 ))}
               </ul>
-              
-              <div className="tw:flex tw:flex-col tw:gap-2">
-                <button disabled className="tw:w-full tw:bg-slate-100 tw:text-slate-500 tw:border tw:border-slate-200 tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-4 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:cursor-not-allowed">
-                  {tierMatrix.free.ctaLabel}
-                </button>
-                <p className="tw:text-xs tw:text-slate-500 tw:text-center">Simulasi Phase 3B</p>
-              </div>
             </div>
 
             {/* Pro Individual */}
-            <div className="tw:bg-slate-50 tw:rounded-xl tw:border-2 tw:border-slate-900 tw:p-6 tw:shadow-md tw:flex tw:flex-col tw:relative">
-              <div className="tw:absolute tw:-top-3 tw:left-6 tw:bg-slate-900 tw:text-white tw:px-3 tw:py-1 tw:rounded-md tw:text-xs tw:font-bold tw:uppercase tw:tracking-wider">
-                Paket Anda
-              </div>
+            <div className={`tw:rounded-xl tw:border-2 tw:p-6 tw:shadow-md tw:flex tw:flex-col tw:relative ${currentPlan.plan === "pro" ? "tw:bg-slate-50 tw:border-slate-900" : "tw:bg-white tw:border-slate-200"}`}>
+              {currentPlan.plan === "pro" && (
+                <div className="tw:absolute tw:-top-3 tw:left-6 tw:bg-slate-900 tw:text-white tw:px-3 tw:py-1 tw:rounded-md tw:text-xs tw:font-bold tw:uppercase tw:tracking-wider">
+                  Paket Anda
+                </div>
+              )}
               <h3 className="tw:text-xl tw:font-bold tw:text-slate-900">{tierMatrix.pro.label}</h3>
               <p className="tw:text-sm tw:text-slate-600 tw:mt-1 tw:mb-4 tw:min-h-[40px]">{tierMatrix.pro.tagline}</p>
               
               <div className="tw:mb-6">
-                <span className="tw:text-3xl tw:font-bold tw:text-slate-900">Rp99.000</span>
-                <span className="tw:text-sm tw:text-slate-500">/bulan</span>
-                <p className="tw:text-xs tw:text-slate-500 tw:mt-1">{tierMatrix.pro.pricing.label}</p>
+                <span className="tw:text-3xl tw:font-bold tw:text-slate-900">
+                  Rp{billingCycle === "yearly" ? "990.000" : "99.000"}
+                </span>
+                <span className="tw:text-sm tw:text-slate-500">/{billingCycle === "yearly" ? "tahun" : "bulan"}</span>
+                <p className="tw:text-xs tw:text-green-600 tw:font-medium tw:mt-1 tw:min-h-[16px]">
+                  {billingCycle === "yearly" ? "Hemat 2 bulan" : ""}
+                </p>
               </div>
               
               <ul className="tw:space-y-3 tw:mb-6 tw:flex-grow">
@@ -146,19 +238,24 @@ export function SubscriptionPage() {
                 ))}
               </ul>
               
-              <div className="tw:flex tw:flex-col tw:gap-2">
-                <button disabled className="tw:w-full tw:bg-slate-100 tw:text-slate-500 tw:border tw:border-slate-200 tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-4 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:cursor-not-allowed">
-                  {tierMatrix.pro.ctaLabel}
-                </button>
-                <p className="tw:text-xs tw:text-slate-500 tw:text-center">Simulasi Phase 3B</p>
-              </div>
+              {currentPlan.plan === "free" && (
+                <UpgradeDialog 
+                  trigger={
+                    <button className="tw:w-full tw:bg-slate-900 tw:text-white tw:border tw:border-slate-900 tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-4 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:hover:bg-slate-800 tw:transition-colors tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400">
+                      Upgrade ke Pro
+                    </button>
+                  }
+                  onConfirm={handleUpgradeToPro}
+                  monthlyPrice={`Rp${billingCycle === "yearly" ? "990.000/tahun" : "99.000/bulan"}`}
+                />
+              )}
             </div>
 
           </div>
         </section>
 
         {/* AI Capabilities Preview */}
-        <section className="tw:mb-16">
+        <section id="ai-usage" tabIndex={-1} className="tw:mb-16 tw:scroll-mt-20 tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400 focus-visible:tw:rounded-xl">
           <div className="tw:text-center tw:mb-8">
             <h2 className="tw:text-2xl tw:font-bold tw:text-slate-900 tw:mb-2">Kemampuan AI ProjectLink</h2>
             <p className="tw:text-sm tw:text-slate-600 tw:max-w-2xl tw:mx-auto">Alat cerdas untuk menganalisis kandidat, merangkum dokumen, dan merekomendasikan peran kolaborasi terbaik.</p>
@@ -231,8 +328,8 @@ export function SubscriptionPage() {
             </div>
             <div className="tw:w-full tw:md:w-auto tw:shrink-0">
               <a 
-                href="/plans/organization" 
-                className="tw:w-full tw:bg-white tw:border tw:border-slate-300 tw:text-slate-900 tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-6 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:hover:bg-slate-50 tw:transition-colors"
+                href="/organization/nusantara/billing" 
+                className="tw:w-full tw:bg-white tw:border tw:border-slate-300 tw:text-slate-900 tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-6 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:hover:bg-slate-50 tw:transition-colors tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400"
               >
                 Lihat paket organisasi
               </a>
@@ -280,13 +377,13 @@ export function SubscriptionPage() {
           <div className="tw:flex tw:flex-col tw:sm:flex-row tw:justify-center tw:gap-4">
             <a 
               href="/register" 
-              className="tw:w-full tw:sm:w-auto tw:bg-white tw:text-slate-900 tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-8 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:hover:bg-slate-100 tw:transition-colors"
+              className="tw:w-full tw:sm:w-auto tw:bg-white tw:text-slate-900 tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-8 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:hover:bg-slate-100 tw:transition-colors tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-white"
             >
               Mulai gratis
             </a>
             <a 
               href="/plans/organization" 
-              className="tw:w-full tw:sm:w-auto tw:bg-transparent tw:border tw:border-slate-600 tw:text-white tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-8 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:hover:bg-slate-800 tw:transition-colors"
+              className="tw:w-full tw:sm:w-auto tw:bg-transparent tw:border tw:border-slate-600 tw:text-white tw:text-sm tw:font-semibold tw:min-h-[44px] tw:px-8 tw:rounded-lg tw:inline-flex tw:items-center tw:justify-center tw:hover:bg-slate-800 tw:transition-colors tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-white"
             >
               Lihat paket organisasi
             </a>
