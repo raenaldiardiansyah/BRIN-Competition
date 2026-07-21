@@ -29,6 +29,7 @@ import {
   PublicEntityExperience,
 } from "./product-experiences";
 import type { SearchScope } from "@/dummy/registry";
+import type { SubscriptionPlan, SubscriptionSessionOverride } from "@/types/domain/subscription";
 import { GlobalStatusAnnouncer } from "./accessibility";
 
 type Persona = "guest" | "new" | "returning" | "organization";
@@ -48,9 +49,12 @@ type DemoState = {
   contributionConfirmed: boolean;
   recommendationHidden: boolean;
   notificationDone: boolean;
-  plan: "Free Core" | "Pro Individual" | "Organization";
+  plan: "Free Core" | "Pro Individual" | "Organization"; // Legacy plan, kept for backward compat
   controlsCollapsed: boolean;
   previewWidth: "fluid" | "1440" | "768" | "390";
+
+  // Subscription overrides
+  subscriptionOverrides?: SubscriptionSessionOverride;
 };
 
 type ActionLinkProps = {

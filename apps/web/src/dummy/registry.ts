@@ -282,3 +282,5 @@ export const publicSlugs = {
   organizations: ["nexa-research-lab", "nusantara-labs", "arunika-innovation-hub"],
   opportunities: ["urban-heat-mapping", "embedded-engineer-pilot", "railway-sensor-collaboration"],
 } as const;
+
+export * as subscriptionFixtures from "./subscription-fixtures";
