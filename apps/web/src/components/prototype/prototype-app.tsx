@@ -263,13 +263,15 @@ function WireBox({
   title,
   children,
   className = "",
+  id,
 }: {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
-    <section className={`wire-box ${className}`}>
+    <section className={`wire-box ${className}`} id={id}>
       {title ? <h2>{title}</h2> : null}
       {children}
     </section>
@@ -720,7 +722,8 @@ function PublicProjectPage({
         }
       />
       <div className="project-meta">
-        <Badge tone="info">{project?.lifecycle}</Badge>
+        <Badge tone="info">{project?.lifecycle?.toUpperCase() || "PROTOTYPE"}</Badge>
+        <span className="muted">Source: Self-reported</span>
         <span>Owner: {dummyOrganizations.find((o) => o.id === project?.organizationId)?.displayName || "Owner"}</span>
         <span>Visibility: {project?.visibility === "LIMITED_PREVIEW" ? "Limited preview" : "Public"}</span>
         <span>Last evidence check: 12 Jul 2026</span>
@@ -1256,7 +1259,7 @@ function ContributionsPage({
   demo: DemoState;
   updateDemo: (next: Partial<DemoState>) => void;
 }) {
-  const project = dummyProjects.find((p) => p.slug === "aqua-loop") ?? dummyProjects[0];
+  const project = dummyProjects.find((p) => p.slug === "aqua-loop")!;
   const contributions = dummyContributions.filter((c) => c.projectId === project?.id);
   const evidences = dummyEvidence.filter((e) => e.projectId === project?.id);
   const isGuest = demo.persona === "guest";
@@ -1374,7 +1377,7 @@ function DiscoveryPage({
 }
 
 function MatchDetailPage({ demo }: { demo: DemoState }) {
-  const match = dummyMatches.find((m) => m.id === "aqua-maya") ?? dummyMatches[0];
+  const match = dummyMatches.find((m) => m.id === "aqua-maya")!;
   const profile = dummyProfiles.find((p) => p.id === match?.profileId);
   const project = dummyProjects.find((p) => p.id === match?.projectId);
 
@@ -1481,7 +1484,7 @@ function CollaborationPage({
       </div>
       <div className="request-list">
         <article className="request-card">
-          <div><Badge tone="warning">Action required</Badge><h3>Undangan pilot dari {dummyOrganizations[0]?.displayName}</h3><p>Research Pilot · {dummyProjects[0]?.title} · balas sebelum 25 Jul</p></div>
+          <div><Badge tone="warning">Action required</Badge><h3>Undangan pilot dari {dummyOrganizations.find(o => o.slug === "nusantara")?.displayName}</h3><p>Research Pilot · {dummyProjects.find(p => p.slug === "aqua-loop")?.title} · balas sebelum 25 Jul</p></div>
           <div className="button-row"><button className="button primary" onClick={() => updateDemo({ applicationSent: true })}>{demo.applicationSent ? "Diterima ✓" : "Terima"}</button><button className="button secondary">Minta detail</button><button className="button ghost">Tolak</button></div>
         </article>
         <article className="request-card">
@@ -2197,6 +2200,7 @@ export function PrototypeApp() {
           recommendationHidden={demo.recommendationHidden}
           onHideRecommendation={() => updateDemo({ recommendationHidden: !demo.recommendationHidden })}
           subscription={subscription}
+          persona={demo.persona}
         />
       ) : (
         <NewUserHome

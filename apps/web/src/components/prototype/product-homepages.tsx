@@ -1394,7 +1394,8 @@ export function ReturningUserHome({
   onHideRecommendation,
   recommendationHidden,
   subscription,
-}: HomeProps) {
+  persona = "personal",
+}: HomeProps & { persona?: string }) {
   const [completedActions, setCompletedActions] = useState<string[]>([]);
   const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [revisionNote, setRevisionNote] = useState("");
@@ -1440,8 +1441,8 @@ export function ReturningUserHome({
       <section className="pl-welcome pl-welcome-returning">
         <div className="pl-welcome-header">
           <p className="pl-eyebrow">Minggu ini di ProjectLink</p>
-          <h1>Selamat datang kembali, Maya.</h1>
-          <p>{pendingActions.length ? `Ada ${pendingActions.length} hal yang layak Anda tinjau sebelum melanjutkan pekerjaan.` : "Semua tindakan utama sudah selesai."}</p>
+          <h1>Selamat datang kembali, {persona === "organization" ? "Nusantara Labs" : "Maya"}.</h1>
+          <p>{persona === "organization" ? "Akses fitur administratif melalui sidebar untuk pengelolaan aset." : pendingActions.length ? `Ada ${pendingActions.length} hal yang layak Anda tinjau sebelum melanjutkan pekerjaan.` : "Semua tindakan utama sudah selesai."}</p>
           <div className="tw:mt-6">
             <Anchor href="/notifications" className="pl-button pl-button-primary">Tinjau semua tindakan</Anchor>
           </div>

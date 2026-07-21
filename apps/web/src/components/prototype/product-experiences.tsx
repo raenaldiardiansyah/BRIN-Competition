@@ -656,7 +656,7 @@ export function PublicEntityExperience({
 
   let colabHref = `/collaboration/new?project=${item.slug}`;
   if (isGuest) {
-    colabHref = `/login?returnTo=${encodeURIComponent(item.href)}&action=collaborate`;
+    colabHref = `/login?returnTo=${encodeURIComponent(`/${scope}/${item.slug}`)}&action=collaborate`;
   }
 
   return (
