@@ -13,5 +13,18 @@ tsconfig.tsbuildinfo
 *.tsbuildinfo
 .DS_Store
 
-# Private product and UX documentation — keep local only
-docs/
+# Ignore seluruh isi docs secara default.
+docs/*
+
+# Izinkan folder implementation diperiksa kembali.
+!docs/implementation/
+
+# Ignore seluruh isi implementation secara default.
+docs/implementation/*
+
+# Track hanya governance documents berikut.
+!docs/implementation/subscription-ai-homepage-plan-v3.md
+!docs/implementation/subscription-execution-guardrail.md
+!docs/implementation/subscription-component-prompts.md
+!docs/implementation/subscription-verification-prompts.md
+
