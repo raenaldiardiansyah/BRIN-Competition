@@ -37,8 +37,11 @@ import {
   guestSubscription, 
   newUserSubscription, 
   returningUserSubscription, 
-  organizationSubscription 
+  organizationSubscription,
+  scenarioFixtures
 } from "@/dummy/subscription-fixtures";
+import { ProductOrganizationPlans } from "../subscription/product-organization-plans";
+import { ProductOrganizationBilling } from "./product-org-billing";
 
 type Persona = "guest" | "new" | "returning" | "organization";
 type SimulatedState = "normal" | "loading" | "empty" | "error";
@@ -58,6 +61,7 @@ type DemoState = {
   recommendationHidden: boolean;
   notificationDone: boolean;
   plan: "Free Core" | "Pro Individual" | "Organization"; // Legacy plan, kept for backward compat
+  orgRole?: "admin" | "member";
   controlsCollapsed: boolean;
   previewWidth: "fluid" | "1440" | "768" | "390";
 
@@ -1719,7 +1723,7 @@ function PrototypeControls({
             });
             if (persona === "guest") window.location.assign("/");
             if (persona === "new" || persona === "returning") window.location.assign("/home");
-            if (persona === "organization") window.location.assign("/organization/nexa-research-lab");
+            if (persona === "organization") window.location.assign("/organization/nusantara");
           }}
         >
           <option value="guest">Tamu</option>
@@ -1728,6 +1732,18 @@ function PrototypeControls({
           <option value="organization">Organisasi</option>
         </select>
       </label>
+      {demo.persona === "organization" && (
+        <label>
+          Peran Organisasi
+          <select
+            value={demo.orgRole || "admin"}
+            onChange={(event) => updateDemo({ orgRole: event.target.value as "admin" | "member" })}
+          >
+            <option value="admin">Admin</option>
+            <option value="member">Member</option>
+          </select>
+        </label>
+      )}
       <label>
         State layar
         <select value={simulatedState} onChange={(event) => setSimulatedState(event.target.value as SimulatedState)}>
@@ -1838,11 +1854,11 @@ function AppShell({
     pathname.startsWith("/organization/");
   const nav = orgContext
     ? [
-        ["/organization/nexa-research-lab", "Beranda"],
-        ["/organization/nexa-research-lab/projects", "Proyek"],
-        ["/organization/nexa-research-lab/search?scope=talent", "Pencarian"],
-        ["/organization/nexa-research-lab/pipeline", "Pipeline"],
-        ["/organization/nexa-research-lab/members", "Anggota"],
+        ["/organization/nusantara", "Beranda"],
+        ["/organization/nusantara/projects", "Proyek"],
+        ["/organization/nusantara/search?scope=talent", "Pencarian"],
+        ["/organization/nusantara/pipeline", "Pipeline"],
+        ["/organization/nusantara/members", "Anggota"],
       ]
     : [["/home", "Beranda"], ["/discovery", "Jelajahi"], ["/my-projects", "Proyek"], ["/collaboration", "Kolaborasi"], ["/notifications", "Notifikasi"], ["/me", "Profil"]];
   const contextualSearch = isPublic && pathname === "/search" && searchScope
@@ -1864,7 +1880,7 @@ function AppShell({
         setSimulatedState={setSimulatedState}
       />
       <header className={`site-header${contextualSearch ? " search-mode" : ""}`}>
-        <Link className="brand" href={isPublic ? "/" : orgContext ? "/organization/nexa-research-lab" : "/home"}>
+        <Link className="brand" href={isPublic ? "/" : orgContext ? "/organization/nusantara" : "/home"}>
           <span className="brand-mark">
             <img src="/brand-icon.png" alt="" width="42" height="42" />
           </span>
@@ -1960,7 +1976,7 @@ function AppShell({
               <ActionLink href="/register" variant="primary">Bergabung</ActionLink>
             </>
           ) : (
-            <Link className="context-switch" href={orgContext ? "/home" : "/organization/nexa-research-lab"}>
+            <Link className="context-switch" href={orgContext ? "/home" : "/organization/nusantara"}>
               <span>{orgContext ? "NX" : "MP"}</span>
               <span><strong>{orgContext ? "Nexa Research Lab" : "Maya Pradipta"}</strong><small>{orgContext ? "Organisasi · Admin" : `${demo.plan} · Personal`}</small></span>
             </Link>
@@ -2039,9 +2055,11 @@ export function PrototypeApp() {
     let fixture = guestSubscription;
     if (demo.persona === "new") fixture = newUserSubscription;
     if (demo.persona === "returning") fixture = returningUserSubscription;
-    if (demo.persona === "organization") fixture = organizationSubscription;
+    if (demo.persona === "organization") {
+      fixture = demo.orgRole === "member" ? scenarioFixtures.organizationMember : organizationSubscription;
+    }
     return resolveSubscriptionState(demo.persona, fixture, demo.subscriptionOverrides || {});
-  }, [demo]);
+  }, [demo.persona, demo.orgRole, demo.subscriptionOverrides]);
 
   const page = useMemo(() => {
     if (!hydrated) {
@@ -2110,12 +2128,16 @@ export function PrototypeApp() {
       const section = pathname.replace("/org/nusantara", "").replace(/^\//, "");
       return <OrganizationPage section={section} demo={demo} updateDemo={updateDemo} />;
     }
-    if (pathname === "/org/nexa-research-lab") return <CompatibilityRoutePage canonical="/organization/nexa-research-lab" />;
-    if (pathname === "/org/nexa-research-lab/projects") return <CompatibilityRoutePage canonical="/organization/nexa-research-lab/projects" />;
-    if (pathname.startsWith("/organization/nexa-research-lab")) {
-      const section = pathname.replace("/organization/nexa-research-lab", "").replace(/^\//, "");
-      return section ? <OrganizationWorkspaceExperience section={section} /> : <OrganizationHome />;
+    if (pathname === "/org/nusantara") return <CompatibilityRoutePage canonical="/organization/nusantara" />;
+    if (pathname === "/org/nusantara/projects") return <CompatibilityRoutePage canonical="/organization/nusantara/projects" />;
+    if (pathname.startsWith("/organization/nusantara")) {
+      const section = pathname.replace("/organization/nusantara", "").replace(/^\//, "");
+      if (section === "billing") {
+        return <ProductOrganizationBilling subscription={subscription} canManageBilling={demo.orgRole !== "member"} />;
+      }
+      return section ? <OrganizationWorkspaceExperience section={section} /> : <OrganizationHome subscription={subscription} />;
     }
+    if (pathname === "/plans/organization") return <ProductOrganizationPlans />;
     if (pathname === "/prototype-map") return <PrototypeMapPage />;
     if (pathname.startsWith("/opportunities/")) {
       const slug = pathname.split("/").pop() ?? "";

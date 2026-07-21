@@ -1584,7 +1584,15 @@ export function ReturningUserHome({
   );
 }
 
-export function OrganizationHome() {
+export function OrganizationHome({ subscription }: { subscription?: import("../../types/domain/subscription").SubscriptionData }) {
+  const isEnterprise = subscription?.plan === "enterprise";
+  const org = subscription?.organization;
+  const seatsUsed = org?.seatsUsed || 0;
+  const seatsLimit = org?.seatsLimit || (isEnterprise ? "∞" : 15);
+  const aiLimit = subscription?.ai?.usage?.limit;
+  const aiUsed = subscription?.ai?.usage?.used || 0;
+  const aiPercentage = aiLimit ? Math.round((aiUsed / aiLimit) * 100) : 0;
+  const planName = isEnterprise ? "Enterprise Plan" : "Organization Plan";
   return (
     <div className="pl-home pl-dashboard">
       <section className="pl-org-context">
@@ -1596,18 +1604,28 @@ export function OrganizationHome() {
             <p>Applied Research · Climate Technology · Bandung</p>
           </div>
         </div>
+        {subscription && (
+          <div className="tw:bg-white tw:border tw:border-slate-200 tw:rounded-xl tw:p-4 tw:shadow-sm tw:min-w-[280px]">
+            <h3 className="tw:text-sm tw:font-bold tw:text-slate-900 tw:mb-2">{planName}</h3>
+            <p className="tw:text-xs tw:text-slate-600 tw:mb-1">{seatsUsed} dari {seatsLimit} anggota aktif</p>
+            <p className="tw:text-xs tw:text-slate-600 tw:mb-3">AI usage: {aiLimit === null ? "Tak terbatas" : `${aiPercentage}%`}</p>
+            <Anchor href="/organization/nusantara/billing" className="tw:inline-flex tw:items-center tw:justify-center tw:w-full tw:px-3 tw:py-1.5 tw:text-xs tw:font-semibold tw:text-slate-700 tw:bg-slate-50 hover:tw:bg-slate-100 tw:border tw:border-slate-200 tw:rounded-lg tw:transition-colors">
+              Kelola organisasi
+            </Anchor>
+          </div>
+        )}
         <div className="pl-button-row">
           <Anchor href="/home">Beralih ke personal</Anchor>
-          <Anchor href="/organization/nexa-research-lab/projects" className="pl-button pl-button-primary"><Plus size={18} /> Buat peluang</Anchor>
+          <Anchor href="/organization/nusantara/projects" className="pl-button pl-button-primary"><Plus size={18} /> Buat peluang</Anchor>
         </div>
       </section>
 
       <section className="pl-org-action-grid">
         {[
-          ["3", "Aplikasi baru", "Perlu ditinjau minggu ini", "Navy", "/organization/nexa-research-lab/shortlists"],
-          ["1", "Persetujuan", "Offer menunggu owner", "Blue", "/organization/nexa-research-lab/pipeline"],
-          ["2", "Shortlist aktif", "Dibagikan ke 4 anggota", "Teal", "/organization/nexa-research-lab/shortlists"],
-          ["1", "Role belum siap", "Batasi akses sebelum mulai", "Soft", "/organization/nexa-research-lab/members"],
+          ["3", "Aplikasi baru", "Perlu ditinjau minggu ini", "Navy", "/organization/nusantara/shortlists"],
+          ["1", "Persetujuan", "Offer menunggu owner", "Blue", "/organization/nusantara/pipeline"],
+          ["2", "Shortlist aktif", "Dibagikan ke 4 anggota", "Teal", "/organization/nusantara/shortlists"],
+          ["1", "Role belum siap", "Batasi akses sebelum mulai", "Soft", "/organization/nusantara/members"],
         ].map(([value, label, text, tone, href]) => (
           <a className={`pl-org-action ${tone.toLowerCase()}`} href={href} key={label}>
             <span>{value}</span><div><strong>{label}</strong><small>{text}</small></div><ArrowRight size={18} />
@@ -1617,7 +1635,7 @@ export function OrganizationHome() {
 
       <section className="pl-main-grid pl-org-main">
         <div>
-          <SectionTitle title="Pipeline kolaborasi" action={<Anchor href="/organization/nexa-research-lab/pipeline" className="pl-text-action">Buka pipeline</Anchor>} />
+          <SectionTitle title="Pipeline kolaborasi" action={<Anchor href="/organization/nusantara/pipeline" className="pl-text-action">Buka pipeline</Anchor>} />
           <div className="pl-pipeline-preview">
             {[
               ["Ditemukan", 8, "44%"],
@@ -1637,12 +1655,12 @@ export function OrganizationHome() {
           <div className="pl-shortlisted">
             <span className="pl-avatar">RA</span><div><strong>Rafi Akbar</strong><small>86% match · Contacted</small></div>
           </div>
-          <Anchor href="/organization/nexa-research-lab/shortlists" className="pl-text-action">Kelola shortlist</Anchor>
+          <Anchor href="/organization/nusantara/shortlists" className="pl-text-action">Kelola shortlist</Anchor>
         </aside>
       </section>
 
       <section className="pl-section">
-        <SectionTitle title="Proyek aktif" action={<Anchor href="/organization/nexa-research-lab/projects" className="pl-text-action">Lihat semua</Anchor>} />
+        <SectionTitle title="Proyek aktif" action={<Anchor href="/organization/nusantara/projects" className="pl-text-action">Lihat semua</Anchor>} />
         <div className="pl-match-grid">
           <ProjectPreview title="Urban Heat Mapping Research Pilot" organization="Nexa Research Lab" stage="RESEARCH" tags={["Geospatial", "Climate"]} tone="teal" />
           <ProjectPreview title="Open Sensor Calibration Library" organization="Nexa Research Lab" stage="BUILDING" tags={["Open source", "IoT"]} />
@@ -1656,7 +1674,7 @@ export function OrganizationHome() {
           <h2>Temukan evidence dan orang yang pernah menyelesaikan tantangan serupa.</h2>
           <p>Pencarian tidak berhenti pada jabatan atau kata kunci keahlian.</p>
         </div>
-        <form action="/organization/nexa-research-lab/search">
+        <form action="/organization/nusantara/search">
           <input name="scope" type="hidden" value="talent" />
           <label>
             <span className="sr-only">Masalah yang ingin diselesaikan</span>
