@@ -40,6 +40,12 @@ import {
   organizationSubscription,
   scenarioFixtures
 } from "@/dummy/subscription-fixtures";
+import { dummyProjects } from "../../dummy/registry/projects";
+import { dummyProfiles } from "../../dummy/registry/profiles";
+import { dummyContributions } from "../../dummy/registry/contributions";
+import { dummyEvidence } from "../../dummy/registry/evidence";
+import { dummyMatches } from "../../dummy/registry/matches";
+import { dummyOrganizations } from "../../dummy/registry/organizations";
 import { ProductOrganizationPlans } from "../subscription/product-organization-plans";
 import { ProductOrganizationBilling } from "./product-org-billing";
 
@@ -647,12 +653,26 @@ function PublicProjectPage({
   demo,
   updateDemo,
   router,
+  projectSlug,
 }: {
   limited: boolean;
   demo: DemoState;
   updateDemo: (next: Partial<DemoState>) => void;
   router: ReturnType<typeof useRouter>;
+  projectSlug?: string;
 }) {
+  const project = limited
+    ? dummyProjects.find(
+        (p) =>
+          p.slug === projectSlug ||
+          p.visibility === "LIMITED_PREVIEW" ||
+          p.slug === "urban-heat-mapping",
+      ) ?? dummyProjects.find((p) => p.visibility === "LIMITED_PREVIEW")
+    : dummyProjects.find((p) => p.slug === (projectSlug ?? "aqua-loop")) ??
+      dummyProjects.find((p) => p.slug === "aqua-loop");
+  const contributions = dummyContributions.filter((c: any) => c.projectId === project?.id);
+  const evidences = dummyEvidence.filter((e: any) => e.projectId === project?.id);
+
   const collaborate = () => {
     if (demo.persona === "guest") {
       router.push(
@@ -672,11 +692,11 @@ function PublicProjectPage({
       </div>
       <PageHeader
         eyebrow={limited ? "Limited preview" : "Public project"}
-        title={limited ? "Smart Materials for Low-Cost Cooling" : project.title}
+        title={project?.title || "Project"}
         description={
           limited
-            ? "Pemilik membatasi detail teknis. Ringkasan aman tetap tersedia."
-            : project.summary
+            ? project?.previewPolicy?.restrictionReason || "Pemilik membatasi detail teknis."
+            : project?.problem
         }
         actions={
           <>
@@ -700,31 +720,33 @@ function PublicProjectPage({
         }
       />
       <div className="project-meta">
-        <Badge tone="info">{limited ? "Access controlled" : project.status}</Badge>
-        <span>Owner: Raka Wibawa</span>
-        <span>Visibility: {limited ? "Limited preview" : "Public"}</span>
+        <Badge tone="info">{project?.lifecycle}</Badge>
+        <span>Owner: {dummyOrganizations.find((o) => o.id === project?.organizationId)?.displayName || "Owner"}</span>
+        <span>Visibility: {project?.visibility === "LIMITED_PREVIEW" ? "Limited preview" : "Public"}</span>
         <span>Last evidence check: 12 Jul 2026</span>
       </div>
       <div className="content-with-rail">
         <div className="card-list">
           <WireBox title="Masalah & hasil">
             <p>
-              {limited
-                ? "Material pasif untuk menurunkan temperatur bangunan. Detail formula dan hasil pengujian hanya untuk reviewer yang mendapat akses."
-                : "Pengujian lapangan menunjukkan deteksi perubahan pH dapat dipantau dalam interval 15 menit pada tiga lokasi pilot."}
+              {project?.problem}
             </p>
           </WireBox>
           <WireBox title="Kontribusi transparan">
             <div className="table-like">
-              <div><strong>Raka Wibawa</strong><span>Project Owner · Hardware integration</span><Badge tone="success">Dikonfirmasi</Badge></div>
-              <div><strong>Maya Pradipta</strong><span>Data pipeline · 2025–2026</span><Badge tone="warning">Menunggu konfirmasi</Badge></div>
+              {contributions.map((c: any) => {
+                const profile = dummyProfiles.find((p: any) => p.id === c.profileId);
+                return (
+                  <div key={c.id}><strong>{profile?.displayName}</strong><span>{c.role} · {c.output}</span><Badge tone={c.confirmationStatus === "CONFIRMED" ? "success" : "warning"}>{c.confirmationStatus}</Badge></div>
+                )
+              })}
             </div>
-            <ActionLink href="/projects/aqua-loop/contributions">Periksa contribution</ActionLink>
+            <ActionLink href={`/projects/${project?.slug}/contributions`}>Periksa contribution</ActionLink>
           </WireBox>
           <WireBox title="Evidence yang dapat diperiksa">
             {limited ? (
               <div className="locked-panel">
-                <strong>3 evidence tersedia</strong>
+                <strong>{evidences.length} evidence tersedia</strong>
                 <p>Nama file dan detail sumber disembunyikan.</p>
                 <ActionLink href="/login?returnTo=/projects/cooling-preview&action=request-access">
                   Login untuk meminta akses
@@ -732,9 +754,9 @@ function PublicProjectPage({
               </div>
             ) : (
               <div className="table-like">
-                <div><strong>Repository sensor ingestion</strong><span>GitHub · diperiksa 12 Jul</span><Badge tone="success">Terhubung</Badge></div>
-                <div><strong>Pilot test report</strong><span>PDF · sumber organisasi</span><Badge tone="info">Org confirmed</Badge></div>
-                <div><strong>Field dataset v2</strong><span>Dataset · public metadata</span><Badge>Self-reported</Badge></div>
+                {evidences.map((e: any) => (
+                  <div key={e.id}><strong>{e.title}</strong><span>{e.type} · {e.ownership}</span><Badge tone="success">{e.reviewStatus}</Badge></div>
+                ))}
               </div>
             )}
           </WireBox>
@@ -1234,6 +1256,45 @@ function ContributionsPage({
   demo: DemoState;
   updateDemo: (next: Partial<DemoState>) => void;
 }) {
+  const project = dummyProjects.find((p) => p.slug === "aqua-loop") ?? dummyProjects[0];
+  const contributions = dummyContributions.filter((c) => c.projectId === project?.id);
+  const evidences = dummyEvidence.filter((e) => e.projectId === project?.id);
+  const isGuest = demo.persona === "guest";
+
+  const canConfirmContribution = (contribution: (typeof contributions)[number]) =>
+    !isGuest &&
+    contribution.confirmationStatus !== "CONFIRMED" &&
+    (demo.persona === "returning" || demo.persona === "organization");
+
+  const renderEvidence = (evidence: (typeof evidences)[number]) => {
+    if (isGuest && evidence.visibility !== "PUBLIC") {
+      return (
+        <article className="evidence-card restricted" key={evidence.id}>
+          <div className="file-placeholder">RESTRICTED</div>
+          <strong>{evidence.title}</strong>
+          <span>{evidence.type} · Akses terbatas</span>
+          <Badge tone="warning">{evidence.visibility === "PROJECT_MEMBERS" ? "PROJECT_MEMBERS" : "PRIVATE"}</Badge>
+          <p className="microcopy">Sumber dan ownership disembunyikan untuk tamu.</p>
+        </article>
+      );
+    }
+
+    return (
+      <article className="evidence-card" key={evidence.id}>
+        <div className="file-placeholder">FILE</div>
+        <strong>{evidence.title}</strong>
+        <span>{evidence.type} · {evidence.sourceStatus}</span>
+        <Badge tone={evidence.reviewStatus === "VERIFIED" ? "success" : evidence.reviewStatus === "PENDING" ? "warning" : "neutral"}>
+          {evidence.reviewStatus}
+        </Badge>
+        {!isGuest && evidence.ownership ? <span className="microcopy">Ownership: {evidence.ownership}</span> : null}
+        {!isGuest && evidence.sourceStatus === "AVAILABLE" ? (
+          <button className="button secondary" type="button">View evidence</button>
+        ) : null}
+      </article>
+    );
+  };
+
   return (
     <>
       <PageHeader
@@ -1243,34 +1304,37 @@ function ContributionsPage({
       />
       <div className="table-card">
         <div className="table-head"><span>Kontributor</span><span>Peran & hasil</span><span>Evidence</span><span>Status</span><span>Aksi</span></div>
-        <div className="table-row">
-          <span><strong>Maya Pradipta</strong><small>Jan–Jul 2026</small></span>
-          <span>Data pipeline<small>Monitoring interval turun menjadi 15 menit</small></span>
-          <span>Repository + laporan uji</span>
-          <span><Badge tone={demo.contributionConfirmed ? "success" : "warning"}>{demo.contributionConfirmed ? "Dikonfirmasi" : "Menunggu konfirmasi"}</Badge></span>
-          <span><button className="button secondary" onClick={() => updateDemo({ contributionConfirmed: true })}>{demo.contributionConfirmed ? "Selesai ✓" : "Konfirmasi"}</button></span>
-        </div>
-        <div className="table-row">
-          <span><strong>Raka Wibawa</strong><small>2025–sekarang</small></span>
-          <span>Hardware integration<small>3 node sensor aktif</small></span>
-          <span>Prototype + field log</span>
-          <span><Badge tone="success">Dikonfirmasi owner</Badge></span>
-          <span><button className="button ghost">Lihat histori</button></span>
-        </div>
+        {contributions.map((c) => {
+          const profile = dummyProfiles.find((p) => p.id === c.profileId);
+          const linkedEvidence = c.evidenceIds
+            ?.map((id) => dummyEvidence.find((e) => e.id === id))
+            .filter(Boolean);
+          return (
+            <div className="table-row" key={c.id}>
+              <span><strong>{profile?.displayName}</strong><small>{c.period?.start ?? "2025-2026"}</small></span>
+              <span>{c.role}<small>{c.output}</small></span>
+              <span>{linkedEvidence?.length ? linkedEvidence.map((e) => e!.title).join(", ") : "None"}</span>
+              <span><Badge tone={c.confirmationStatus === "CONFIRMED" ? "success" : "warning"}>{c.confirmationStatus}</Badge></span>
+              <span>
+                {canConfirmContribution(c) ? (
+                  <button
+                    className="button secondary"
+                    onClick={() => updateDemo({ contributionConfirmed: true })}
+                    type="button"
+                  >
+                    Konfirmasi
+                  </button>
+                ) : (
+                  <span className="muted">{c.confirmationStatus === "CONFIRMED" ? "—" : "Menunggu otorisasi"}</span>
+                )}
+              </span>
+            </div>
+          );
+        })}
       </div>
-      <WireBox title="Evidence" className="section-block compact">
+      <WireBox title="Evidence" className="section-block compact" id="evidence">
         <div className="evidence-grid">
-          {[
-            ["Repository sensor ingestion", "GitHub · source linked", "Terhubung"],
-            ["Pilot test report", "PDF · organization source", "Org confirmed"],
-            ["Field dataset v2", "Dataset · last checked 12 Jul", "Self-reported"],
-          ].map(([title, source, status]) => (
-            <article className="evidence-card" key={title}>
-              <div className="file-placeholder">FILE</div>
-              <strong>{title}</strong><span>{source}</span><Badge>{status}</Badge>
-              <button className="button secondary">View evidence</button>
-            </article>
-          ))}
+          {evidences.map(renderEvidence)}
         </div>
       </WireBox>
     </>
@@ -1309,44 +1373,68 @@ function DiscoveryPage({
   );
 }
 
-function MatchDetailPage() {
+function MatchDetailPage({ demo }: { demo: DemoState }) {
+  const match = dummyMatches.find((m) => m.id === "aqua-maya") ?? dummyMatches[0];
+  const profile = dummyProfiles.find((p) => p.id === match?.profileId);
+  const project = dummyProjects.find((p) => p.id === match?.projectId);
+
+  if (demo.persona === "guest") {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Explainable matching"
+          title="Matching personal memerlukan login"
+          description="Tamu dapat melihat proyek publik, tetapi detail matching personal disembunyikan."
+        />
+        <WireBox title="Akses terbatas">
+          <p>Analisis kecocokan personal hanya tersedia setelah autentikasi.</p>
+          <ActionLink href={`/login?returnTo=${encodeURIComponent("/matches/aqua-maya")}&action=view-matching`} variant="primary">
+            Masuk untuk melihat matching
+          </ActionLink>
+        </WireBox>
+      </>
+    );
+  }
+
   return (
     <>
       <PageHeader
         eyebrow="Explainable matching"
-        title="Mengapa Maya cocok untuk AquaLoop?"
+        title={`Mengapa ${profile?.displayName || "Kandidat"} cocok untuk ${project?.title || "Proyek"}?`}
         description="Skor bukan kebenaran mutlak. Periksa alasan, evidence, gap, dan data yang belum tersedia."
         actions={<ActionLink href="/collaboration/new?person=maya&project=aqua-loop" variant="primary">Invite to project</ActionLink>}
       />
       <div className="confidence-strip">
-        <div><strong>Keyakinan: sedang</strong><span>Cukup data untuk rekomendasi awal; belum cukup untuk keputusan final.</span></div>
-        <div className="confidence-meter"><span style={{ width: "68%" }} /></div>
+        <div><strong>Keyakinan: {match?.core?.confidence ?? "MEDIUM"}</strong><span>Cukup data untuk rekomendasi awal; belum cukup untuk keputusan final.</span></div>
+        {typeof match?.score === "number" ? (
+          <div className="confidence-meter"><span style={{ width: `${match.score}%` }} /></div>
+        ) : null}
+        {typeof match?.score === "number" ? (
+          <p className="microcopy">Skor metadata sekunder: {match.score}%</p>
+        ) : null}
       </div>
       <div className="match-detail-grid">
         <WireBox title="Alasan kecocokan">
           <ul className="reason-bullets">
-            <li><strong>Python & time-series</strong><span>Dibuktikan melalui 2 repository publik.</span></li>
-            <li><strong>Environmental sensing</strong><span>Kontribusi terkonfirmasi pada RiverWatch.</span></li>
-            <li><strong>Availability selaras</strong><span>8 jam/minggu; proyek membutuhkan 8–10 jam.</span></li>
+            <li><strong>Kekuatan utama</strong><span>{match?.core?.primaryReason}</span></li>
+            {match?.relevantSkills?.map((skill, i) => <li key={i}><strong>Skill Relevan</strong><span>{skill}</span></li>)}
           </ul>
         </WireBox>
         <WireBox title="Evidence pendukung">
           <div className="table-like">
-            <div><strong>RiverWatch pipeline</strong><span>Repository · source linked</span><ActionLink href="/profiles/maya">Buka</ActionLink></div>
-            <div><strong>Field anomaly report</strong><span>Organization confirmed</span><button className="button secondary">View evidence</button></div>
+            {match?.core?.supportingEvidence?.map((l, i) => <div key={i}><strong>Evidence</strong><span>{l}</span></div>)}
           </div>
         </WireBox>
         <WireBox title="Gap & keterbatasan">
           <ul>
-            <li>Belum ada evidence penggunaan LoRaWAN.</li>
-            <li>Availability dilaporkan pengguna, belum dikonfirmasi.</li>
-            <li>Data proyek privat tidak digunakan.</li>
+            <li>{match?.core?.mainGap}</li>
+            <li>{match?.core?.dataLimitation}</li>
           </ul>
           <button className="button ghost">Berikan feedback pada hasil</button>
         </WireBox>
         <WireBox title="Tindakan berikutnya">
-          <p>Kirim undangan terstruktur dengan konteks proyek, peran, ekspektasi, dan tenggat.</p>
-          <ActionLink href="/collaboration/new?person=maya&project=aqua-loop" variant="primary">Invite to project</ActionLink>
+          <p>{match?.core?.nextAction?.label}</p>
+          <ActionLink href={match?.core?.nextAction?.href || "#"} variant="primary">Invite to project</ActionLink>
         </WireBox>
       </div>
       <div className="premium-note">
@@ -1393,7 +1481,7 @@ function CollaborationPage({
       </div>
       <div className="request-list">
         <article className="request-card">
-          <div><Badge tone="warning">Action required</Badge><h3>Undangan pilot dari Nusantara Labs</h3><p>Research Pilot · Urban Heat Mapping · balas sebelum 25 Jul</p></div>
+          <div><Badge tone="warning">Action required</Badge><h3>Undangan pilot dari {dummyOrganizations[0]?.displayName}</h3><p>Research Pilot · {dummyProjects[0]?.title} · balas sebelum 25 Jul</p></div>
           <div className="button-row"><button className="button primary" onClick={() => updateDemo({ applicationSent: true })}>{demo.applicationSent ? "Diterima ✓" : "Terima"}</button><button className="button secondary">Minta detail</button><button className="button ghost">Tolak</button></div>
         </article>
         <article className="request-card">
@@ -1978,7 +2066,7 @@ function AppShell({
           ) : (
             <Link className="context-switch" href={orgContext ? "/home" : "/organization/nusantara"}>
               <span>{orgContext ? "NX" : "MP"}</span>
-              <span><strong>{orgContext ? "Nexa Research Lab" : "Maya Pradipta"}</strong><small>{orgContext ? "Organisasi · Admin" : `${demo.plan} · Personal`}</small></span>
+              <span><strong>{orgContext ? dummyOrganizations.find((o) => o.id === "org-nusantara")?.displayName : dummyProfiles.find((p) => p.slug === "maya-pradipta")?.displayName}</strong><small>{orgContext ? "Organisasi · Admin" : `${demo.plan} · Personal`}</small></span>
             </Link>
           )}
         </div>
@@ -2075,11 +2163,23 @@ export function PrototypeApp() {
     if (pathname === "/about") return <PrototypeMapPage />;
     if (pathname === "/explore") return <ExplorePage demo={demo} updateDemo={updateDemo} />;
     if (pathname === "/search") return <ContextualSearchExperience initialScope={searchScope as SearchScope | undefined} />;
-    if (pathname === "/projects/aqua-loop") return <PublicEntityExperience scope="projects" slug="aqua-loop" />;
-    if (pathname === "/projects/industrial-motor-monitoring") return <PublicEntityExperience scope="projects" slug="industrial-motor-monitoring" />;
-    if (pathname === "/projects/smart-cooling") return <PublicEntityExperience scope="projects" slug="smart-cooling" />;
-    if (pathname === "/projects/confidential-water-system") return <PublicProjectPage limited demo={demo} updateDemo={updateDemo} router={router} />;
-    if (pathname === "/projects/cooling-preview") return <PublicProjectPage limited demo={demo} updateDemo={updateDemo} router={router} />;
+    if (pathname === "/projects/aqua-loop") {
+      return (
+        <PublicEntityExperience scope="projects" slug="aqua-loop" demo={demo} updateDemo={updateDemo} router={router} />
+      );
+    }
+    if (pathname === "/projects/industrial-motor-monitoring") {
+      return <PublicEntityExperience scope="projects" slug="industrial-motor-monitoring" demo={demo} updateDemo={updateDemo} router={router} />;
+    }
+    if (pathname === "/projects/smart-cooling") {
+      return <PublicEntityExperience scope="projects" slug="smart-cooling" demo={demo} updateDemo={updateDemo} router={router} />;
+    }
+    if (pathname === "/projects/confidential-water-system") {
+      return <PublicProjectPage limited demo={demo} updateDemo={updateDemo} router={router} projectSlug="confidential-water-system" />;
+    }
+    if (pathname === "/projects/cooling-preview") {
+      return <PublicProjectPage limited demo={demo} updateDemo={updateDemo} router={router} projectSlug="cooling-preview" />;
+    }
     if (pathname.startsWith("/profiles/")) {
       const slug = pathname.split("/").pop() ?? "";
       return <PublicEntityExperience scope="people" slug={slug === "maya" ? "maya-pradipta" : slug} />;
@@ -2109,7 +2209,7 @@ export function PrototypeApp() {
     if (pathname === "/projects/aqua-loop/manage") return <ManageProjectPage />;
     if (pathname === "/projects/aqua-loop/contributions") return <ContributionsPage demo={demo} updateDemo={updateDemo} />;
     if (pathname === "/discovery") return <DiscoveryPage demo={demo} updateDemo={updateDemo} />;
-    if (pathname === "/matches/aqua-maya") return <MatchDetailPage />;
+    if (pathname === "/matches/aqua-maya") return <MatchDetailPage demo={demo} />;
     if (pathname === "/saved") return <SavedPage demo={demo} />;
     if (pathname === "/collaboration") return <CollaborationPage demo={demo} updateDemo={updateDemo} />;
     if (pathname === "/collaboration/new") return <CollaborationForm demo={demo} updateDemo={updateDemo} />;

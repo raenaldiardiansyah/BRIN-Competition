@@ -4,20 +4,20 @@ export const dummyProjects: Project[] = [
   {
     id: "proj-1",
     slug: "aqua-loop",
-    title: "AquaLoop: Pemantauan Kualitas Air Terbuka",
-    problem: "Data kualitas air sering tertutup dan tidak real-time, menyulitkan respon pencemaran.",
-    organizationId: "org-1", // Nexa Research Lab
-    lifecycle: "PILOT",
-    readiness: "PILOT_READY",
-    readinessSource: "Pengujian laboratorium tahap 2 selesai",
+    title: "AquaLoop",
+    problem: "Monitoring kualitas dan distribusi air",
+    organizationId: "org-nusantara",
+    lifecycle: "ACTIVE",
+    readiness: "PROTOTYPE",
+    readinessSource: "Self-reported",
     visibility: "PUBLIC",
-    location: "Bandung, Jawa Barat",
-    mode: "HYBRID",
-    commitment: "10-15 jam/minggu",
-    deadline: "2026-09-30T00:00:00Z",
+    location: "Bandung",
+    mode: "Hybrid",
+    commitment: "6–8 jam/minggu",
+    deadline: "2026-08-31T00:00:00Z",
     evidenceSummary: {
-      total: 5,
-      verified: 3,
+      total: 4,
+      verified: 2,
       pending: 1,
       unavailable: 1,
       lastUpdatedAt: "2026-07-15T08:00:00Z"
@@ -25,17 +25,11 @@ export const dummyProjects: Project[] = [
     collaborationNeeds: [
       {
         id: "need-1",
-        title: "Optimasi algoritma deteksi pola",
-        role: "Data Scientist / Engineer",
+        title: "Embedded Systems Contributor",
+        role: "Embedded Systems Contributor",
         experienceLevel: "Menengah",
-        commitment: "Fleksibel",
+        commitment: "6–8 jam/minggu",
         status: "OPEN"
-      },
-      {
-        id: "need-2",
-        title: "Validasi sensor IoT",
-        role: "Hardware Engineer",
-        status: "FILLED"
       }
     ],
     nextAction: {

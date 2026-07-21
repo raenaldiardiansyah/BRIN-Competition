@@ -32,6 +32,12 @@ import {
   type SearchItem,
   type SearchScope,
 } from "@/dummy/registry";
+import { dummyProjects } from "@/dummy/registry/projects";
+import { dummyOrganizations } from "@/dummy/registry/organizations";
+import { dummyProfiles } from "@/dummy/registry/profiles";
+import { dummyContributions } from "@/dummy/registry/contributions";
+import { dummyEvidence } from "@/dummy/registry/evidence";
+import { dummyMatches } from "@/dummy/registry/matches";
 import { announce } from "./accessibility";
 
 function go(url: string) {
@@ -362,12 +368,275 @@ function PublicHero({ item }: { item: SearchItem }) {
   );
 }
 
+function evidenceSourceLabel(sourceStatus: string) {
+  if (sourceStatus === "AVAILABLE") return "Tersedia";
+  if (sourceStatus === "UNAVAILABLE") return "Tidak tersedia";
+  return sourceStatus;
+}
+
+function evidenceReviewLabel(reviewStatus: string) {
+  if (reviewStatus === "VERIFIED") return "Terverifikasi";
+  if (reviewStatus === "PENDING") return "Menunggu tinjauan";
+  if (reviewStatus === "UNREVIEWED") return "Belum ditinjau";
+  return reviewStatus;
+}
+
+function PublicProjectDetailSection({
+  item,
+  demo,
+}: {
+  item: SearchItem;
+  demo?: { persona?: string };
+}) {
+  const isGuest = demo?.persona === "guest";
+  const isAquaLoop = item.slug === "aqua-loop";
+  const project = dummyProjects.find((p) => p.slug === item.slug);
+  if (!project) return null;
+
+  const contributions = dummyContributions.filter((c) => c.projectId === project.id);
+  const evidences = dummyEvidence.filter((e) => e.projectId === project.id);
+
+  const masalahText = project.problem;
+  const solusiText = project.collaborationNeeds?.[0]?.title
+    ? `Kebutuhan kolaborasi aktif: ${project.collaborationNeeds[0].title}.`
+    : "Solusi terintegrasi menggunakan sensor dan pipeline data untuk pemantauan berkala.";
+
+  const readinessSource = project.readinessSource ?? "Self-declared";
+
+  const members = contributions.map((c) => {
+    const profile = dummyProfiles.find((p) => p.id === c.profileId);
+    return {
+      id: c.id,
+      name: profile?.displayName ?? "Unknown",
+      role: c.role,
+      contribution: c.responsibility,
+    };
+  });
+
+  const evidencesList = evidences.map((e) => {
+    const restricted = isGuest && e.visibility !== "PUBLIC";
+    return {
+      id: e.id,
+      name: e.title,
+      type: e.type,
+      owner: restricted ? undefined : e.ownership,
+      sourceStatus: e.sourceStatus,
+      reviewStatus: e.reviewStatus,
+      visibility: e.visibility,
+      restricted,
+    };
+  });
+
+  const openNeed = project.collaborationNeeds?.find((n) => n.status === "OPEN");
+  const kebutuhanText = openNeed
+    ? `Membuka peluang bagi ${openNeed.role} dengan komitmen ${openNeed.commitment ?? project.commitment ?? "fleksibel"}.`
+    : "Membutuhkan kolaborator untuk validasi sensor lapangan.";
+  const gapText = openNeed?.title ?? "Belum ada gap terbuka";
+
+  return (
+    <div className="px-project-detail-extended tw:space-y-6">
+      <section className="px-content-card">
+        <h2>Masalah & Solusi Inovasi</h2>
+        <div className="tw:space-y-4">
+          <div className="tw:border-l-4 tw:border-slate-300 tw:pl-4">
+            <span className="tw:block tw:text-xs tw:font-semibold tw:text-slate-500 tw:uppercase">Masalah yang Diselesaikan</span>
+            <p className="tw:text-sm tw:text-slate-700 tw:mt-1">{masalahText}</p>
+          </div>
+          <div className="tw:border-l-4 tw:border-blue-500 tw:pl-4">
+            <span className="tw:block tw:text-xs tw:font-semibold tw:text-slate-500 tw:uppercase">Solusi & Teknologi</span>
+            <p className="tw:text-sm tw:text-slate-700 tw:mt-1">{solusiText}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-content-card">
+        <h2>Lifecycle & Penilaian Kesiapan</h2>
+        <div className="px-info-grid tw:mb-4">
+          <div>
+            <span>Tingkat Kesiapan (Readiness)</span>
+            <strong className="tw:text-blue-600">{project.readiness}</strong>
+          </div>
+          <div>
+            <span>Status Proyek</span>
+            <strong>{project.lifecycle}</strong>
+          </div>
+        </div>
+        <div className="px-verification">
+          <Info size={24} className="tw:text-blue-500" />
+          <div>
+            <strong>Sumber Penilaian Readiness</strong>
+            <span className="tw:text-xs tw:text-slate-600 tw:block tw:mt-1">{readinessSource}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-content-card">
+        <h2>Anggota Proyek & Kontribusi Nyata</h2>
+        <div className="tw:space-y-4">
+          {members.map((member) => (
+            <div key={member.id} className="tw:p-3 tw:bg-slate-50 tw:rounded-xl tw:border tw:border-slate-100">
+              <div className="tw:flex tw:items-center tw:justify-between">
+                <strong className="tw:text-sm tw:text-slate-800">{member.name}</strong>
+                <span className="tw:text-xs tw:font-medium tw:text-slate-500 tw:bg-slate-200/60 tw:px-2 tw:py-0.5 tw:rounded-md">{member.role}</span>
+              </div>
+              <p className="tw:text-xs tw:text-slate-600 tw:mt-1">Kontribusi: {member.contribution}</p>
+            </div>
+          ))}
+        </div>
+        {isAquaLoop ? (
+          <div className="tw:mt-4">
+            <a href={`/projects/${project.slug}/contributions`} className="pl-button pl-button-secondary tw:w-full tw:text-center tw:block">
+              Periksa Kontribusi Transparan & Histori
+            </a>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="px-content-card">
+        <h2>Dokumen & Bukti (Evidence)</h2>
+        <div className="tw:space-y-3 tw:mb-4">
+          {evidencesList.map((ev) => (
+            <div key={ev.id} className="tw:flex tw:items-center tw:justify-between tw:p-3 tw:bg-white tw:border tw:border-slate-200 tw:rounded-xl">
+              <div className="tw:flex tw:items-center tw:gap-3">
+                <ClipboardText size={20} className="tw:text-slate-400" />
+                <div>
+                  <strong className="tw:block tw:text-xs tw:text-slate-800">{ev.name}</strong>
+                  <span className="tw:block tw:text-[10px] tw:text-slate-500">
+                    {ev.type} · {evidenceSourceLabel(ev.sourceStatus)} · {ev.visibility}
+                    {ev.owner ? ` · Pemilik: ${ev.owner}` : ev.restricted ? " · Metadata terbatas" : ""}
+                  </span>
+                </div>
+              </div>
+              <Status tone={ev.reviewStatus === "VERIFIED" ? "teal" : ev.reviewStatus === "PENDING" ? "blue" : "warning"}>
+                {evidenceReviewLabel(ev.reviewStatus)}
+              </Status>
+            </div>
+          ))}
+        </div>
+        {isAquaLoop ? (
+          <div className="tw:mb-4">
+            <a href={`/projects/${project.slug}/contributions#evidence`} className="pl-button pl-button-secondary tw:w-full tw:text-center tw:block">
+              Buka & Periksa Semua Evidence
+            </a>
+          </div>
+        ) : null}
+        <p className="tw:text-[11px] tw:text-slate-400 tw:italic">
+          Verifikasi terikat secara spesifik pada masing-masing dokumen evidence dan tidak berlaku sebagai klaim menyeluruh terhadap seluruh komponen proyek.
+        </p>
+      </section>
+
+      <section className="px-content-card">
+        <h2>Kebutuhan Kolaborasi</h2>
+        <div className="tw:p-4 tw:bg-blue-50/50 tw:border tw:border-blue-100 tw:rounded-2xl">
+          <div className="tw:mb-3">
+            <strong className="tw:block tw:text-xs tw:font-semibold tw:text-blue-900">Peran yang Dibutuhkan</strong>
+            <p className="tw:text-sm tw:text-slate-700 tw:mt-1">{kebutuhanText}</p>
+          </div>
+          <div>
+            <strong className="tw:block tw:text-xs tw:font-semibold tw:text-blue-900">Gap Saat Ini</strong>
+            <span className="tw:inline-flex tw:items-center tw:px-2.5 tw:py-0.5 tw:rounded-full tw:text-xs tw:font-semibold tw:bg-amber-100 tw:text-amber-800 tw:mt-1">
+              {gapText}
+            </span>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ProjectExplainableMatchingSection({
+  item,
+  demo,
+}: {
+  item: SearchItem;
+  demo?: { persona?: string };
+}) {
+  const isGuest = demo?.persona === "guest";
+  const project = dummyProjects.find((p) => p.slug === item.slug);
+  const match = dummyMatches.find((m) => m.projectId === project?.id);
+
+  if (isGuest) {
+    return (
+      <section className="px-content-card">
+        <div className="tw:flex tw:items-center tw:gap-2 tw:mb-4">
+          <Sparkle size={20} className="tw:text-amber-500" />
+          <h2>Explainable Matching (AI)</h2>
+        </div>
+        <div className="tw:p-4 tw:bg-slate-50 tw:border tw:border-dashed tw:border-slate-200 tw:rounded-xl tw:text-center">
+          <p className="tw:text-xs tw:text-slate-600 tw:mb-3">Analisis keselarasan AI dan skor kecocokan disembunyikan untuk tamu.</p>
+          <a href={`/login?returnTo=${encodeURIComponent(item.href)}&action=view-matching`} className="pl-button pl-button-secondary tw:inline-block">
+            Masuk untuk melihat kecocokan
+          </a>
+        </div>
+      </section>
+    );
+  }
+
+  if (!match) return null;
+
+  return (
+    <section className="px-content-card">
+      <div className="tw:flex tw:items-center tw:gap-2 tw:mb-4">
+        <Sparkle size={20} className="tw:text-blue-600" />
+        <h2>Explainable Matching (AI)</h2>
+      </div>
+
+      <div className="tw:mb-4">
+        <div className="tw:flex tw:items-center tw:justify-between tw:mb-1">
+          <span className="tw:text-xs tw:font-semibold tw:text-slate-500">Keyakinan rekomendasi</span>
+          <span className="tw:text-xs tw:font-bold tw:text-blue-600">{match.core.confidence}</span>
+        </div>
+        {typeof match.score === "number" ? (
+          <>
+            <div className="tw:w-full tw:bg-slate-200 tw:rounded-full tw:h-2">
+              <div className="tw:bg-blue-600 tw:h-2 tw:rounded-full" style={{ width: `${match.score}%` }} />
+            </div>
+            <p className="tw:text-[10px] tw:text-slate-500 tw:mt-1">Skor metadata sekunder: {match.score}%</p>
+          </>
+        ) : null}
+      </div>
+
+      <div className="tw:space-y-4">
+        <div>
+          <strong className="tw:block tw:text-xs tw:text-slate-500">Alasan Kecocokan Utama</strong>
+          <p className="tw:text-xs tw:text-slate-800 tw:font-semibold tw:mb-1">{match.core.primaryReason}</p>
+          <ul className="tw:list-disc tw:list-inside tw:text-xs tw:text-slate-700 tw:space-y-1">
+            {match.core.supportingEvidence.map(evidence => (
+              <li key={evidence}>{evidence}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <strong className="tw:block tw:text-xs tw:text-slate-500">Keterbatasan & Gap Penilaian</strong>
+          <ul className="tw:list-disc tw:list-inside tw:text-xs tw:text-slate-700 tw:space-y-1 tw:mt-1">
+            {match.core.mainGap && <li>{match.core.mainGap}</li>}
+            {match.core.dataLimitation && <li>{match.core.dataLimitation}</li>}
+          </ul>
+        </div>
+      </div>
+
+      <div className="tw:mt-4 tw:pt-2 tw:border-t tw:border-slate-100">
+        <a href="/matches/aqua-maya" className="pl-button pl-button-secondary tw:w-full tw:text-center tw:block">
+          Lihat Analisis Kecocokan Rinci
+        </a>
+      </div>
+    </section>
+  );
+}
+
 export function PublicEntityExperience({
   scope,
   slug,
+  demo,
+  updateDemo,
+  router,
 }: {
   scope: SearchScope;
   slug: string;
+  demo?: any;
+  updateDemo?: (next: any) => void;
+  router?: any;
 }) {
   const item = searchItems.find((candidate) => candidate.scope === scope && candidate.slug === slug);
   if (!item) {
@@ -380,44 +649,88 @@ export function PublicEntityExperience({
       </div>
     );
   }
-  const returnTo = item.href;
-  const action = scope === "opportunities" ? "apply-opportunity" : scope === "people" ? "start-collaboration" : "save-item";
-  const authHref = `/login?returnTo=${encodeURIComponent(returnTo)}&action=${action}`;
+
+  const isProject = scope === "projects";
+  const isGuest = demo?.persona === "guest";
+  const isOrg = demo?.persona === "organization";
+
+  let colabHref = `/collaboration/new?project=${item.slug}`;
+  if (isGuest) {
+    colabHref = `/login?returnTo=${encodeURIComponent(item.href)}&action=collaborate`;
+  }
+
   return (
     <div className="px-public-page">
       <PublicHero item={item} />
       <div className="px-public-grid">
-        <main>
-          <section className="px-content-card">
-            <h2>{scope === "people" ? "Kontribusi proyek" : scope === "organizations" ? "Bidang dan aktivitas publik" : scope === "opportunities" ? "Masalah dan scope kontribusi" : "Masalah yang diselesaikan"}</h2>
-            <p>{item.summary} Informasi ini diringkas dari data publik dan tidak mengungkap data privat.</p>
-            <div className="px-info-grid">
-              <div><span>Bidang</span><strong>{item.field}</strong></div>
-              <div><span>Lokasi</span><strong>{item.location}</strong></div>
-              <div><span>Status</span><strong>{item.status}</strong></div>
-              <div><span>{scope === "people" ? "Availability" : scope === "opportunities" ? "Komitmen" : "Readiness"}</span><strong>{item.availability ?? item.commitment ?? item.readiness ?? "Publik"}</strong></div>
-            </div>
-          </section>
-          <section className="px-content-card">
-            <h2>Evidence dan konfirmasi</h2>
-            <div className="px-verification"><ShieldCheck size={24} weight="duotone" /><div><strong>{item.verification}</strong><span>Scope verifikasi selalu dijelaskan; tidak menjadi klaim menyeluruh.</span></div></div>
-            {item.evidence.map((evidence) => <div className="px-evidence-line" key={evidence}><ClipboardText size={18} />{evidence}</div>)}
-          </section>
-          {scope === "people" ? (
-            <section className="px-content-card"><h2>Contribution confirmation</h2><p>AquaLoop · Data pipeline contributor · Dikonfirmasi project owner pada 12 Juli 2026.</p></section>
-          ) : null}
-          {scope === "organizations" ? (
-            <section className="px-content-card"><h2>Proyek, peluang, dan anggota pilihan</h2><div className="px-mini-list"><a href="/projects/industrial-motor-monitoring">Industrial Motor Monitoring</a><a href="/opportunities/urban-heat-mapping">Urban Heat Mapping Collaboration</a><a href="/profiles/nadia-putri">Nadia Putri · Researcher</a></div></section>
-          ) : null}
-          {scope === "opportunities" ? (
-            <section className="px-content-card"><h2>Required contribution</h2><ul><li>Membangun pipeline data yang dapat direproduksi.</li><li>Mendokumentasikan validation result.</li><li>Berpartisipasi 6–8 jam per minggu sebelum deadline 30 September 2026.</li></ul></section>
-          ) : null}
+        <main className="tw:space-y-6">
+          {isProject ? (
+            <>
+              <PublicProjectDetailSection item={item} demo={demo} />
+              <ProjectExplainableMatchingSection item={item} demo={demo} />
+            </>
+          ) : (
+            <>
+              <section className="px-content-card">
+                <h2>{scope === "people" ? "Kontribusi proyek" : scope === "organizations" ? "Bidang dan aktivitas publik" : scope === "opportunities" ? "Masalah dan scope kontribusi" : "Masalah yang diselesaikan"}</h2>
+                <p>{item.summary} Informasi ini diringkas dari data publik dan tidak mengungkap data privat.</p>
+                <div className="px-info-grid">
+                  <div><span>Bidang</span><strong>{item.field}</strong></div>
+                  <div><span>Lokasi</span><strong>{item.location}</strong></div>
+                  <div><span>Status</span><strong>{item.status}</strong></div>
+                  <div><span>{scope === "people" ? "Availability" : scope === "opportunities" ? "Komitmen" : "Readiness"}</span><strong>{item.availability ?? item.commitment ?? item.readiness ?? "Publik"}</strong></div>
+                </div>
+              </section>
+              <section className="px-content-card">
+                <h2>Evidence dan konfirmasi</h2>
+                <div className="px-verification"><ShieldCheck size={24} weight="duotone" /><div><strong>{item.verification}</strong><span>Scope verifikasi selalu dijelaskan; tidak menjadi klaim menyeluruh.</span></div></div>
+                {item.evidence.map((evidence) => <div className="px-evidence-line" key={evidence}><ClipboardText size={18} />{evidence}</div>)}
+              </section>
+              {scope === "people" ? (
+                <section className="px-content-card"><h2>Contribution confirmation</h2><p>AquaLoop · Data pipeline contributor · Dikonfirmasi project owner pada 12 Juli 2026.</p></section>
+              ) : null}
+              {scope === "organizations" ? (
+                <section className="px-content-card"><h2>Proyek, peluang, dan anggota pilihan</h2><div className="px-mini-list"><a href="/projects/industrial-motor-monitoring">Industrial Motor Monitoring</a><a href="/opportunities/urban-heat-mapping">Urban Heat Mapping Collaboration</a><a href="/profiles/nadia-putri">Nadia Putri · Researcher</a></div></section>
+              ) : null}
+              {scope === "opportunities" ? (
+                <section className="px-content-card"><h2>Required contribution</h2><ul><li>Membangun pipeline data yang dapat direproduksi.</li><li>Mendokumentasikan validation result.</li><li>Berpartisipasi 6–8 jam per minggu sebelum deadline 30 September 2026.</li></ul></section>
+              ) : null}
+            </>
+          )}
         </main>
         <aside className="px-public-action">
           <Status tone="blue">{item.verification}</Status>
           <h2>Tindakan berikutnya</h2>
           <p>{scope === "people" ? "Mulai permintaan kolaborasi dengan konteks proyek." : scope === "organizations" ? "Lihat peluang atau ajukan kolaborasi terstruktur." : scope === "opportunities" ? "Tinjau kebutuhan sebelum mengajukan kontribusi." : "Simpan atau mulai kolaborasi pada proyek ini."}</p>
-          <a className="pl-button pl-button-primary" href={authHref}>{scope === "opportunities" ? "Ajukan kontribusi" : "Mulai kolaborasi"}</a>
+
+          {isProject ? (
+            isOrg ? (
+              <div className="tw:space-y-2">
+                <button className="pl-button pl-button-primary tw:w-full tw:opacity-50 tw:cursor-not-allowed" disabled>
+                  Ajukan kolaborasi
+                </button>
+                <p className="tw:text-[11px] tw:text-slate-500 tw:text-center">
+                  Organisasi tidak dapat melamar proyek sebagai kontributor individu. Silakan gunakan akun personal Anda.
+                </p>
+              </div>
+            ) : (
+              <div className="tw:space-y-2">
+                <a className="pl-button pl-button-primary tw:w-full tw:text-center tw:block" href={colabHref}>
+                  Ajukan kolaborasi
+                </a>
+                {isGuest && (
+                  <p className="tw:text-[11px] tw:text-slate-500 tw:text-center">
+                    Login diperlukan untuk melanjutkan pengajuan kolaborasi personal.
+                  </p>
+                )}
+              </div>
+            )
+          ) : (
+            <a className="pl-button pl-button-primary" href={colabHref}>
+              {scope === "opportunities" ? "Ajukan kontribusi" : "Mulai kolaborasi"}
+            </a>
+          )}
+
           <a className="pl-button pl-button-secondary" href={`/search?scope=${scope}`}>Lihat yang serupa</a>
         </aside>
       </div>
@@ -546,7 +859,10 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
       <div className="px-workspace-page">
         <header className="px-search-heading"><div><p className="pl-eyebrow">Collaboration pipeline</p><h1>Gerakkan keputusan, bukan prospek penjualan.</h1><p>Pipeline dibatasi pada alur kolaborasi dan ownership reviewer.</p></div></header>
         <div className="px-pipeline" role="region" aria-label="Collaboration pipeline" tabIndex={0}>
-          {stages.map((stage) => <section key={stage}><header><strong>{stage}</strong><Status>{orgState.pipelineStage === stage ? "1" : "0"}</Status></header>{orgState.pipelineStage === stage ? <article><strong>Maya Pradipta · Urban Heat Pilot</strong><span>Reviewer: {orgState.reviewer || "Belum ditetapkan"}</span><Status tone={(orgState.decision ?? "PENDING") === "PENDING" ? "blue" : orgState.decision === "ACCEPTED" ? "teal" : "warning"}>{orgState.decision ?? "PENDING"}</Status><label>Pindahkan stage<select value={orgState.pipelineStage} onChange={(event) => updateOrg({ pipelineStage: event.target.value }, `Tahap pipeline berubah menjadi ${event.target.value}.`)}>{stages.map((value) => <option key={value}>{value}</option>)}</select></label><div><button type="button" onClick={() => updateOrg({ pipelineStage: "ACCEPTED", decision: "ACCEPTED" }, "Kolaborasi diterima dan dipindahkan ke tahap ACCEPTED.")}>Terima</button><button type="button" onClick={() => updateOrg({ pipelineStage: "WAITING" }, "Kolaborasi dipindahkan ke tahap WAITING.")}>Tunda</button><button type="button" onClick={() => updateOrg({ pipelineStage: "WAITING", decision: "DECLINED", notes: ["Kolaborasi ditolak dengan alasan tersimpan.", ...orgState.notes] }, "Kolaborasi ditolak. Alasan tersimpan di catatan.")}>Tolak</button></div></article> : <div className="px-empty-slot">Belum ada item</div>}</section>)}
+          {stages.map((stage) => <section key={stage}><header><strong>{stage}</strong><Status>{orgState.pipelineStage === stage ? "1" : "0"}</Status></header>                {orgState.pipelineStage === stage ? (
+                  <article>
+                    <strong>{searchItems.find(i => orgState.shortlists.includes(i.slug))?.title ?? "Kandidat"} · Proyek Inovasi</strong>
+                    <span>Reviewer: {orgState.reviewer || "Belum ditetapkan"}</span><Status tone={(orgState.decision ?? "PENDING") === "PENDING" ? "blue" : orgState.decision === "ACCEPTED" ? "teal" : "warning"}>{orgState.decision ?? "PENDING"}</Status><label>Pindahkan stage<select value={orgState.pipelineStage} onChange={(event) => updateOrg({ pipelineStage: event.target.value }, `Tahap pipeline berubah menjadi ${event.target.value}.`)}>{stages.map((value) => <option key={value}>{value}</option>)}</select></label><div><button type="button" onClick={() => updateOrg({ pipelineStage: "ACCEPTED", decision: "ACCEPTED" }, "Kolaborasi diterima dan dipindahkan ke tahap ACCEPTED.")}>Terima</button><button type="button" onClick={() => updateOrg({ pipelineStage: "WAITING" }, "Kolaborasi dipindahkan ke tahap WAITING.")}>Tunda</button><button type="button" onClick={() => updateOrg({ pipelineStage: "WAITING", decision: "DECLINED", notes: ["Kolaborasi ditolak dengan alasan tersimpan.", ...orgState.notes] }, "Kolaborasi ditolak. Alasan tersimpan di catatan.")}>Tolak</button></div></article>) : <div className="px-empty-slot">Belum ada item</div>}</section>)}
         </div>
         <section className="px-note-box"><h2>Catatan tim</h2><form onSubmit={(event) => { event.preventDefault(); const form = new FormData(event.currentTarget); const note = String(form.get("note") ?? ""); if (note) updateOrg({ notes: [...orgState.notes, note] }, "Catatan tim berhasil ditambahkan."); event.currentTarget.reset(); }}><label className="sr-only" htmlFor="pipeline-note">Catatan keputusan</label><input id="pipeline-note" name="note" placeholder="Tambahkan konteks keputusan" /><button className="pl-button pl-button-primary">Tambah catatan</button></form>{orgState.notes.map((note, index) => <p key={`${note}-${index}`}>{note}</p>)}</section>
       </div>

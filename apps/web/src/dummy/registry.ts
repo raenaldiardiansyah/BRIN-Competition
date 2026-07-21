@@ -1,3 +1,30 @@
+import { dummyProjects } from "./registry/projects";
+import { dummyOrganizations } from "./registry/organizations";
+
+function projectSearchProjection(project: (typeof dummyProjects)[number]): SearchItem {
+  const organization = dummyOrganizations.find((o) => o.id === project.organizationId);
+  return {
+    id: `project-${project.slug}`,
+    slug: project.slug,
+    scope: "projects",
+    title: project.title,
+    owner: organization?.displayName ?? "Unknown",
+    summary: project.problem,
+    field: "Environmental Data",
+    location: project.location ?? "",
+    status: project.lifecycle,
+    readiness: project.readiness,
+    verification: `Status ${project.readinessSource}`,
+    evidence: [`${project.evidenceSummary.total} sumber tersedia`],
+    reasons: ["Masalah dan teknologi relevan", "Evidence publik tersedia"],
+    gaps: ["Membutuhkan validasi di lokasi kedua"],
+    href: `/projects/${project.slug}`,
+  };
+}
+
+const aquaLoopProject =
+  dummyProjects.find((p) => p.slug === "aqua-loop") ?? dummyProjects[0];
+
 export type SearchScope =
   | "projects"
   | "people"
@@ -25,23 +52,7 @@ export type SearchItem = {
 };
 
 export const searchItems: SearchItem[] = [
-  {
-    id: "project-aqua-loop",
-    slug: "aqua-loop",
-    scope: "projects",
-    title: "AquaLoop Open Water Monitoring",
-    owner: "BRIN Lab",
-    summary: "Pemantauan kualitas air terbuka berbasis sensor komunitas.",
-    field: "Environmental Data",
-    location: "Bandung",
-    status: "ACTIVE",
-    readiness: "PILOT",
-    verification: "Status pilot dikonfirmasi organisasi",
-    evidence: ["Repository pipeline", "Laporan uji lapangan"],
-    reasons: ["Masalah dan teknologi relevan", "Evidence publik tersedia"],
-    gaps: ["Membutuhkan validasi di lokasi kedua"],
-    href: "/projects/aqua-loop",
-  },
+  projectSearchProjection(aquaLoopProject),
   {
     id: "project-industrial-motor",
     slug: "industrial-motor-monitoring",
