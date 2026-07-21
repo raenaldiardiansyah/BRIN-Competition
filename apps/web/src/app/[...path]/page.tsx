@@ -43,7 +43,6 @@ const prototypeRoutes = [
   "org/nusantara/shortlist",
   "org/nusantara/pipeline",
   "org/nusantara/members",
-  "org/nusantara/subscription",
   "org/nexa-research-lab",
   "org/nexa-research-lab/projects",
   "organization/nexa-research-lab",

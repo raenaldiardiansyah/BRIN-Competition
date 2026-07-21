@@ -31,6 +31,7 @@ import {
 import type { SearchScope } from "@/dummy/registry";
 import type { SubscriptionPlan, SubscriptionSessionOverride } from "@/types/domain/subscription";
 import { GlobalStatusAnnouncer } from "./accessibility";
+import { SubscriptionPage } from "../subscription/subscription-page";
 
 type Persona = "guest" | "new" | "returning" | "organization";
 type SimulatedState = "normal" | "loading" | "empty" | "error";
@@ -1500,55 +1501,7 @@ function PrivacyPage() {
   );
 }
 
-function SubscriptionPage({
-  organization = false,
-  demo,
-  updateDemo,
-}: {
-  organization?: boolean;
-  demo: DemoState;
-  updateDemo: (next: Partial<DemoState>) => void;
-}) {
-  const current = organization ? "Organization" : demo.plan;
-  return (
-    <>
-      <PageHeader
-        eyebrow={organization ? "Organization billing" : "Subscription management"}
-        title={`Paket aktif: ${current}`}
-        description="Usage, renewal, cancellation, dan dampak downgrade terlihat jelas."
-        actions={<ActionLink href="/pricing">Bandingkan semua paket</ActionLink>}
-      />
-      <div className="subscription-grid">
-        <WireBox title="Ringkasan paket" className="focus-box">
-          <Badge tone="success">{current}</Badge>
-          <p>{organization ? "Shared workspace, permission, shortlist, dan pipeline aktif." : "Fitur core untuk profil, project, evidence, matching dasar, dan collaboration."}</p>
-          <p><strong>Renewal:</strong> Belum ditentukan untuk prototype</p>
-          <button className="button ghost">Kelola pembayaran</button>
-        </WireBox>
-        <WireBox title="Usage">
-          <div className="usage-row"><span>Projects</span><strong>{organization ? "8 / limit TBD" : "2 / limit TBD"}</strong></div>
-          <div className="progress-line"><span style={{ width: organization ? "72%" : "38%" }} /></div>
-          <div className="usage-row"><span>AI assistance</span><strong>Limit belum final</strong></div>
-          <div className="progress-line"><span style={{ width: "46%" }} /></div>
-          <p className="microcopy">Proses AI yang gagal tidak mengurangi kuota.</p>
-        </WireBox>
-      </div>
-      {!organization && current === "Free Core" ? (
-        <WireBox title="Preview kemampuan Pro" className="section-block compact">
-          <p>Matching lebih rinci, saved search, alerts, analytics personal, dan histori lebih panjang.</p>
-          <button className="button primary" onClick={() => updateDemo({ plan: "Pro Individual" })}>Simulasikan upgrade ke Pro</button>
-          <p className="microcopy">Setelah upgrade, pengguna kembali ke tindakan sebelumnya.</p>
-        </WireBox>
-      ) : (
-        <WireBox title="Downgrade & cancellation" className="section-block compact">
-          <p>Data di atas batas menjadi read-only selama grace period; tidak langsung dihapus.</p>
-          <button className="button ghost" onClick={() => !organization && updateDemo({ plan: "Free Core" })}>Tinjau dampak downgrade</button>
-          <button className="button ghost">Batalkan paket</button>
-        </WireBox>
-      )}
-    </>
-  );
-}
+// Internal SubscriptionPage replaced by external Phase 3 component
 
 function OrganizationPage({
   section,
@@ -1617,9 +1570,6 @@ function OrganizationPage({
         <WireBox title="Ownership guardrail" className="subtle-box"><p>Akun personal dan kontribusi tetap milik pengguna. Organisasi dapat mencabut akses workspace, bukan menghapus identitas personal.</p></WireBox>
       </>
     );
-  }
-  if (section === "subscription") {
-    return <SubscriptionPage organization demo={demo} updateDemo={updateDemo} />;
   }
   return (
     <>
@@ -2131,7 +2081,7 @@ export function PrototypeApp() {
     if (pathname === "/collaboration/new") return <CollaborationForm demo={demo} updateDemo={updateDemo} />;
     if (pathname === "/notifications") return <NotificationsPage demo={demo} updateDemo={updateDemo} />;
     if (pathname === "/settings/privacy") return <PrivacyPage />;
-    if (pathname === "/subscription") return <SubscriptionPage demo={demo} updateDemo={updateDemo} />;
+    if (pathname === "/subscription") return <SubscriptionPage />;
     if (pathname.startsWith("/org/nusantara")) {
       const section = pathname.replace("/org/nusantara", "").replace(/^\//, "");
       return <OrganizationPage section={section} demo={demo} updateDemo={updateDemo} />;
