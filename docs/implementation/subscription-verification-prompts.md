@@ -32,3 +32,30 @@ P0-01 adalah audit pasif (read-only) untuk mengumpulkan fakta terkait kesiapan i
 - Preflight Report yang disajikan telah memenuhi 100% target audit dengan klasifikasi dan evidence.
 - Tidak ada source/config/dependency mutation.
 - Instruksi pengguna terkait langkah penanganan status `RISK` atau `BLOCKED` (apabila ada) dapat segera dirumuskan.
+
+---
+
+## Verification P0-02: Tailwind v4 & Base UI Dry-Run Proof
+
+**Konteks Verifikasi:**
+P0-02 adalah tahap persiapan (dry-run) untuk mengonfirmasi kompatibilitas shadcn CLI Base UI dengan Tailwind v4. Tahap ini krusial untuk mencegah modifikasi file yang tidak diinginkan dan mencegah instalasi *legacy dependencies* (seperti Lucide/Radix) sebelum eksekusi sebenarnya (P0-03/P0-04).
+
+**Langkah Validasi:**
+1. **Verifikasi Cakupan Laporan Dry-Run:**
+   - Pastikan laporan mencantumkan output aktual secara jelas dari command `shadcn info`.
+   - Pastikan laporan mencantumkan output aktual secara jelas dari command `shadcn add button --dry-run`.
+   - Pastikan prefix yang dihasilkan CLI (misal `tw:`) telah diidentifikasi dan dicatat.
+   - Pastikan terdapat daftar lengkap yang memuat nama dan path setiap file yang direncanakan untuk dibuat atau diubah oleh CLI.
+2. **Validasi Kepatuhan Larangan (Anti-Pattern Check):**
+   - Periksa output CLI (dry-run log) dan pastikan **TIDAK ADA** indikasi CLI akan menambahkan library `lucide-react` atau paket `@radix-ui/*`.
+   - Periksa output CLI dan pastikan **TIDAK ADA** indikasi CLI akan membuat atau mengubah `apps/web/src/components/ui/button.tsx` (yang mana dilarang).
+3. **Zero-Regression Verification:**
+   - Karena tahap ini merupakan *dry-run*, validasi bahwa repositori tidak mengalami mutasi sekecil apa pun.
+   - Jalankan `git status --short` dan pastikan outputnya **kosong** (clean).
+   - Jalankan `git diff --check` dan `git diff --stat` untuk memastikan tidak ada perubahan file konfigurasi, `package.json`, atau *lockfile*.
+
+**Exit Criteria:**
+- Dry-Run Report telah disajikan lengkap dan mencakup prefix aktual.
+- Daftar file target CLI tercatat secara eksplisit sebelum persetujuan (approval).
+- Repositori dalam keadaan bersih (*zero-regression* diverifikasi via Git).
+- Instruksi pengguna untuk tahap modifikasi nyata (P0-03 Token & Portal Implementation atau instalasi nyata shadcn init) telah dapat dirumuskan.

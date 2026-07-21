@@ -82,3 +82,71 @@ Merujuk ke `Verification Prompt P0-01` di `subscription-verification-prompts.md`
 
 **17. Files allowed to modify**
 NONE — audit only.
+
+---
+
+## P0-02: Tailwind v4 & Base UI Dry-Run Proof
+
+**1. Tujuan**
+Mempersiapkan dan membuktikan kompatibilitas CLI shadcn Base UI dengan Tailwind v4 secara terisolasi melalui dry-run. Agen wajib mengidentifikasi prefix aktual yang dihasilkan CLI, serta mencatat setiap file yang akan diubah/ditulis CLI sebelum persetujuan instalasi nyata diberikan.
+
+**2. Lokasi file dan route/parent**
+- `apps/web/`
+- Output CLI terminal
+
+**3. Official references**
+- shadcn CLI Base UI documentation.
+- Tailwind v4 documentation.
+
+**4. Data source**
+Not applicable — CLI dry-run only.
+
+**5. shadcn components**
+Not applicable — CLI dry-run only (khususnya command `shadcn add button --dry-run`).
+
+**6. React Bits**
+Not applicable — CLI dry-run only.
+
+**7. Phosphor icons**
+Not applicable — CLI dry-run only.
+
+**8. Struktur visual/output**
+Not applicable — CLI dry-run only. Output berupa Dry-Run Report berbentuk teks.
+
+**9. Interaksi**
+Not applicable — CLI dry-run only.
+
+**10. State**
+Not applicable — CLI dry-run only.
+
+**11. Responsive behavior**
+Not applicable — CLI dry-run only.
+
+**12. Accessibility**
+Not applicable — CLI dry-run only.
+
+**13. Styling constraints**
+- Pendekatan Tailwind v4 native (CSS-first).
+- Larangan mengimpor atau mengaktifkan Preflight.
+
+**14. Forbidden changes (Hal yang dilarang)**
+- **Dilarang memodifikasi** `apps/web/src/components/ui/button.tsx`.
+- **Dilarang menambahkan** library `lucide-react` atau `@radix-ui/*`.
+- **Dilarang membuat** file konfigurasi Tailwind v3 (`tailwind.config.ts`, `tailwind.config.js`).
+- **Dilarang mengimpor** Tailwind Preflight.
+- **Commands yang BOLEH dijalankan:** `pnpm dlx shadcn@latest info`, `pnpm dlx shadcn@latest add button --dry-run`.
+- **Commands yang TIDAK BOLEH dijalankan:** `shadcn init` (tanpa dry-run), `npm install`, `pnpm install`.
+
+**15. Acceptance criteria**
+Menghasilkan laporan Dry-Run yang memuat:
+- Output aktual dari eksekusi `shadcn info`.
+- Output aktual dari eksekusi `shadcn add button --dry-run`.
+- Penentuan prefix yang dihasilkan CLI (misal: `tw:` atau `tw-`).
+- Daftar eksplisit berisi setiap file yang akan dibuat atau diubah oleh CLI.
+- Tidak ada instalasi dependensi, mutasi file, atau modifikasi konfigurasi (termasuk package.json/lockfile).
+
+**16. Verification**
+Merujuk ke `Verification Prompt P0-02` di `subscription-verification-prompts.md`.
+
+**17. Files allowed to modify**
+NONE — eksekusi P0-02 hanya untuk CLI dry-run. Tidak ada file aplikasi, dependency, config, atau lockfile yang boleh diubah.
