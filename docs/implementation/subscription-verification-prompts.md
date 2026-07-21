@@ -59,3 +59,46 @@ P0-02 adalah tahap persiapan (dry-run) untuk mengonfirmasi kompatibilitas shadcn
 - Daftar file target CLI tercatat secara eksplisit sebelum persetujuan (approval).
 - Repositori dalam keadaan bersih (*zero-regression* diverifikasi via Git).
 - Instruksi pengguna untuk tahap modifikasi nyata (P0-03 Token & Portal Implementation atau instalasi nyata shadcn init) telah dapat dirumuskan.
+
+---
+
+## Verification P0-03: Isolated shadcn Initialization Proof
+
+**Konteks Verifikasi:**
+P0-03 wajib memeriksa dua konteks secara terpisah untuk memastikan inisialisasi shadcn Base UI sepenuhnya terisolasi dan tidak mencemari primary working tree.
+
+**Langkah Validasi:**
+1. **Verifikasi Primary Working Tree:**
+   - Jalankan dan buktikan hasil perintah berikut tetap bersih (kosong):
+     ```bash
+     git status --short
+     git diff --check
+     git diff --stat
+     ```
+2. **Verifikasi Temporary Worktree:**
+   - Pastikan laporan menampilkan data berikut secara eksplisit:
+     - Path temporary worktree.
+     - Commit SHA sumber (harus identik dengan HEAD yang bersih).
+     - Command aktual yang dieksekusi (`shadcn init ...`).
+     - Semua prompt dan jawaban CLI.
+     - Hasil `git status --short` dan `git diff --stat` di temporary worktree.
+     - Output `git diff` untuk **setiap** file yang dibuat/diubah.
+     - Delta `package.json` dan lockfile.
+     - Isi penuh file `components.json` yang dihasilkan.
+     - Konfirmasi: Base UI selection, icon library, alias, CSS path, dan Tailwind config path.
+     - Keberadaan Lucide atau Radix (harus **NOT FOUND**).
+     - Perubahan pada legacy `components/ui/` (harus **NOT FOUND**).
+     - Hasil dari pembersihan (cleanup result) temporary worktree.
+3. **Completion Boundary (Boundary Eksekusi):**
+   - Setelah pelaporan selesai, temporary worktree WAJIB dihapus.
+   - Buktikan ulang bahwa primary working tree tetap bersih setelah penghapusan.
+   - Dilarang menerapkan hasil *initialization* ke primary working tree.
+   - Dilarang membuat commit.
+   - Agen wajib **berhenti** segera setelah memberikan *Initialization Diff Report*.
+
+**Exit Criteria:**
+- *Initialization Diff Report* mendeskripsikan secara transparan dan detail seluruh perubahan yang di-generate CLI pada worktree terisolasi.
+- Primary working tree dibuktikan 100% *zero-mutation* (tidak ternoda sedikit pun).
+- Temporary worktree berhasil dibersihkan/dihapus dengan aman.
+- Tidak ada pelanggaran *Stop Conditions*.
+- Repositori siap, namun agen harus menunggu keputusan pengguna sebelum instalasi shadcn dilakukan secara permanen.

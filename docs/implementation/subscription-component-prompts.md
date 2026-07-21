@@ -150,3 +150,90 @@ Merujuk ke `Verification Prompt P0-02` di `subscription-verification-prompts.md`
 
 **17. Files allowed to modify**
 NONE — eksekusi P0-02 hanya untuk CLI dry-run. Tidak ada file aplikasi, dependency, config, atau lockfile yang boleh diubah.
+
+---
+
+## P0-03: Isolated shadcn Initialization Proof
+
+**1. Tujuan**
+Membuktikan command dan output aktual `shadcn init` tanpa risiko regresi pada primary working tree. Memastikan Base UI dapat dipilih secara eksplisit. Mengaudit `components.json`, dependency dan lockfile delta, serta CSS/config/source yang dibuat atau diubah. Memastikan primary working tree tetap zero-mutation secara absolut dengan menggunakan Git temporary worktree atau salinan repository terisolasi.
+
+**2. Lokasi file dan route/parent**
+- **Execution isolation:** Temporary Git worktree yang dibuat dari commit bersih (HEAD).
+- Primary working tree: DILARANG disentuh selama eksekusi CLI.
+
+**3. Official references**
+- shadcn CLI initialization documentation.
+
+**4. Data source**
+Not applicable.
+
+**5. shadcn components**
+Hanya inisialisasi (`components.json`, utilitas, dan konfigurasi dasar). Belum ada penambahan komponen UI spesifik.
+
+**6. React Bits**
+Not applicable.
+
+**7. Phosphor icons**
+Not applicable.
+
+**8. Struktur visual/output**
+Initialization Diff Report berbentuk teks yang merinci perubahan pada temporary worktree, bukti isolation, dan status verifikasi.
+
+**9. Interaksi**
+Not applicable.
+
+**10. State**
+Not applicable.
+
+**11. Responsive behavior**
+Not applicable.
+
+**12. Accessibility**
+Not applicable.
+
+**13. Styling constraints**
+- Tidak membuat `.pl-ui-scope`.
+- Tidak membuat portal root.
+
+**14. Forbidden changes (Hal yang dilarang)**
+- JANGAN menambahkan komponen (Button, Badge, Card, atau Progress).
+- JANGAN membuat `.pl-ui-scope` atau portal root.
+- JANGAN mengubah legacy `apps/web/src/components/ui/button.tsx`.
+- JANGAN membuat `components.json` secara manual (harus dibiarkan dihasilkan oleh CLI pada temporary worktree).
+- JANGAN melakukan commit di temporary atau primary worktree.
+- JANGAN menerapkan (copy/merge) hasil dari temporary worktree ke primary working tree.
+
+**15. Acceptance criteria**
+- Mencatat baseline Git pada primary working tree dan status pembuatan temporary worktree (pastikan dari HEAD bersih).
+- Menangkap seluruh prompt dan output CLI aktual dari `shadcn init`.
+- Memastikan Base UI dapat dipilih secara eksplisit.
+- Mencatat seluruh file sebelum dan sesudah eksekusi pada temporary worktree. Setiap file hasil CLI harus dicantumkan dalam Initialization Diff Report. File yang tidak diperkirakan diklasifikasikan `RISK` atau `BLOCKED`.
+- Mengaudit `components.json`, delta dependency, dan delta lockfile secara komprehensif.
+- Mengaudit CSS, config, dan source code yang dibuat/diubah.
+- Memastikan primary working tree tetap zero-mutation.
+- Menghapus temporary worktree setelah report selesai.
+- Berhenti setelah menghasilkan *initialization diff report*.
+
+*Stop Conditions (wajib memblokir proses jika terjadi):*
+- Primary working tree berubah.
+- Temporary worktree dibuat dari commit yang bukan HEAD bersih.
+- CLI meminta keputusan interaktif yang tidak dikunci prompt.
+- Command tidak dapat memastikan opsi `--base base`.
+- CLI memilih Radix, bukan Base UI.
+- CLI menambahkan `lucide-react`.
+- CLI mengubah legacy `components/ui/`.
+- CLI membuat atau mengubah file di luar daftar yang terlihat dalam diff.
+- CLI membuat `tailwind.config.*`.
+- CLI mengimpor Preflight/global reset.
+- CLI memasang dependency yang belum disetujui.
+- Proses mencoba menyalin hasil ke primary working tree.
+- Temporary worktree tidak dapat dibersihkan dengan aman.
+- Initialization membutuhkan keputusan interaktif yang belum ditentukan.
+
+**16. Verification**
+Merujuk ke `Verification Prompt P0-03` di `subscription-verification-prompts.md`.
+
+**17. Files allowed to modify**
+- **Primary working tree:** NONE. Dilarang memodifikasi file apa pun.
+- **Temporary worktree:** CLI boleh menghasilkan perubahan hanya untuk keperluan audit. Perubahan tidak boleh di-commit, disalin ke primary working tree, atau dianggap diterima secara otomatis.
