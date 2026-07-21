@@ -156,7 +156,7 @@ NONE — eksekusi P0-02 hanya untuk CLI dry-run. Tidak ada file aplikasi, depend
 ## P0-03: Isolated shadcn Initialization Proof
 
 **1. Tujuan**
-Membuktikan command dan output aktual `shadcn init` tanpa risiko regresi pada primary working tree. Memastikan Base UI dapat dipilih secara eksplisit. Mengaudit `components.json`, dependency dan lockfile delta, serta CSS/config/source yang dibuat atau diubah. Memastikan primary working tree tetap zero-mutation secara absolut dengan menggunakan Git temporary worktree atau salinan repository terisolasi.
+Membuktikan command dan output aktual `shadcn init` tanpa risiko regresi pada primary working tree. Memastikan Base UI dapat dipilih secara eksplisit. Mengaudit `components.json`, dependency dan lockfile delta, serta CSS/config/source yang dibuat atau diubah. Memastikan primary working tree mematuhi "No repository mutation observed berdasarkan Git pre-check dan post-check" dengan menggunakan Git temporary worktree atau salinan repository terisolasi.
 
 **2. Lokasi file dan route/parent**
 - **Execution isolation:** Temporary Git worktree yang dibuat dari commit bersih (HEAD).
@@ -211,7 +211,7 @@ Not applicable.
 - Mencatat seluruh file sebelum dan sesudah eksekusi pada temporary worktree. Setiap file hasil CLI harus dicantumkan dalam Initialization Diff Report. File yang tidak diperkirakan diklasifikasikan `RISK` atau `BLOCKED`.
 - Mengaudit `components.json`, delta dependency, dan delta lockfile secara komprehensif.
 - Mengaudit CSS, config, dan source code yang dibuat/diubah.
-- Memastikan primary working tree tetap zero-mutation.
+- Memastikan primary working tree: No repository mutation observed berdasarkan Git pre-check dan post-check.
 - Menghapus temporary worktree setelah report selesai.
 - Berhenti setelah menghasilkan *initialization diff report*.
 
@@ -243,7 +243,7 @@ Merujuk ke `Verification Prompt P0-03` di `subscription-verification-prompts.md`
 ## P0-04: shadcn Preset Selection and Decode Audit
 
 **1. Tujuan**
-Mencari, mendekode, dan mengaudit kandidat preset resmi dari shadcn. Tujuan utamanya adalah memastikan Base UI digunakan, dependensi ikon kompatibel dengan Phosphor, dan gaya visual preset (style, baseColor, theme, radius, font) cocok dengan panduan desain ProjectLink. Keputusan preset harus didasarkan pada output JSON aktual, bukan tebakan.
+Mencari, mendekode, dan mengaudit kandidat preset resmi dari shadcn menggunakan *opaque preset code*. Tujuan utamanya adalah mengekstrak JSON konfigurasi preset, memeriksa ikon (menolak Lucide), memisahkan argumen Base UI, dan menilai gaya visual preset (style, baseColor, theme, radius, font) agar cocok dengan panduan desain ProjectLink.
 
 **2. Lokasi file dan route/parent**
 - Terminal CLI
@@ -264,9 +264,12 @@ Not applicable.
 
 **7. Phosphor icons**
 - ProjectLink menggunakan Phosphor sebagai satu-satunya icon system untuk UI baru.
-- Preset yang menggunakan atau mengunci Lucide secara hardcoded harus ditolak (`REJECTED`).
-- Preset yang menggunakan icon library lain harus diklasifikasikan `RISK` atau `REJECTED`.
-- Audit harus menentukan apakah properti `iconLibrary` pada output decode dapat diset ke Phosphor, opsi custom, atau dikosongkan secara aman tanpa merusak struktur komponen UI.
+- Aturan icon library wajib:
+  - `phosphor` → eligible untuk APPROVED CANDIDATE apabila persyaratan lain terpenuhi
+  - `lucide` → REJECTED
+  - icon library selain phosphor → REJECTED untuk konfigurasi final ProjectLink (tetap sah sebagai decoded evidence)
+  - icon library tidak tersedia atau tidak dapat diverifikasi → BLOCKED atau NOT FOUND
+- DILARANG menganggap icon library non-Phosphor dapat diganti dengan aman tanpa proof terpisah.
 - DILARANG menginstal dependency icon pada P0-04.
 - Dependensi Phosphor yang sudah ada di repository tidak boleh dimodifikasi.
 
@@ -299,21 +302,29 @@ Not applicable.
 - JANGAN memilih preset hanya karena itu adalah *default* opsi CLI.
 - JANGAN mengarang (hallucinate) preset code.
 - JANGAN menggunakan preset yang tidak dapat di-decode atau diverifikasi keabsahannya (tidak resmi).
+- JANGAN menguji *named preset* menggunakan `preset decode` kecuali dokumentasi CLI aktual secara eksplisit mendukungnya.
 
 **15. Acceptance criteria**
-- **Candidate Discovery Procedure:**
-  1. Menjalankan command `help` / *read-only* untuk mengetahui kapabilitas preset CLI terbaru.
-  2. Menemukan candidate preset code dari sumber resmi CLI yang dapat dibuktikan dari *output* aktual.
-  3. Mencatat sumber dan code kandidat, dan jika tidak ada, langsung berstatus `BLOCKED` (Reason: no verifiable official preset code).
+- **Candidate Distinction & Discovery:**
+  - Bedakan secara tegas antara **Named preset/style** (`nova`, `vega`, `maia`, dan nama preset lain) dengan **Official opaque preset code** (exact code yang berasal dari dokumentasi resmi atau output resmi shadcn/create, contoh: `b5owWMfJ8l`, `a2r6bw`, `bJ4FLU0`).
+  - *Named preset* tidak boleh diuji menggunakan `preset decode`.
+  - Izinkan HANYA *official opaque preset code* yang dicantumkan pada: dokumentasi resmi shadcn, changelog resmi shadcn, official shadcn API reference, atau output resmi shadcn/create yang diberikan pengguna.
+  - Catat URL/judul sumber dan *exact code*.
 - **Decode Audit:**
-  - Menggunakan `shadcn preset decode <code> --json` untuk memeriksa isi tiap kandidat.
-  - Membuktikan isi preset (style, baseColor, theme, font, radius, icon library) melalui output JSON.
-- **Decision Matrix & Keputusan Akhir:**
+  - Menggunakan `shadcn preset decode <code> --json` (dengan opaque code) untuk memeriksa isi tiap kandidat.
+  - Membuktikan isi preset (style, baseColor, theme, font, radius, icon library) melalui output JSON aktual.
+- **Component Base Correction:**
+  - `Preset code` tidak mengenkode *component base*.
+  - Pemilihan *Base UI* harus dikunci secara terpisah. Preset **tidak boleh** ditolak hanya karena raw decode JSON tidak menampilkan field *component base*.
+- **Execution Status & Decision Matrix:**
+  P0-04 execution status: PASS | PARTIAL | BLOCKED
+  Individual candidate decision: APPROVED CANDIDATE | REJECTED | BLOCKED | NOT FOUND
+  
   Setiap kandidat harus menghasilkan matriks berikut:
   ```text
   Preset code: 
   Source: 
-  Component base: 
+  Component base: SEPARATE PARAMETER (Future isolated initialization must explicitly use: -b base)
   Style: 
   Base color: 
   Theme: 
@@ -323,17 +334,17 @@ Not applicable.
   Lucide presence: 
   Phosphor compatibility: 
   Tailwind v4 compatibility: 
-  Decision: [APPROVED CANDIDATE | REJECTED | BLOCKED | NOT FOUND]
+  Individual candidate decision: [APPROVED CANDIDATE | REJECTED | BLOCKED | NOT FOUND]
   Reason: 
   ```
-- Syarat mutlak `APPROVED CANDIDATE`:
-  - Base UI terbukti.
-  - Tidak ada Lucide.
-  - Tidak mengunci icon library yang bertentangan.
-  - Dapat digunakan dengan Phosphor.
-  - Kompatibel dengan Tailwind v4.
-  - Raw decode output JSON tersedia dan diverifikasi.
-  - Repositori 100% *zero-mutation*.
+- Syarat penyelesaian P0-04 (Acceptance):
+  P0-04 boleh berstatus `PASS` meskipun semua kandidat `REJECTED`, selama:
+  - minimal satu official opaque preset code berhasil didecode;
+  - raw output tersedia;
+  - seluruh properti yang tersedia telah diaudit (style, color, theme, font, radius, dan icon library);
+  - setiap kandidat menerima keputusan;
+  - Base UI dicatat sebagai parameter terpisah;
+  - No repository mutation observed berdasarkan Git pre-check dan post-check.
 
 **16. Verification**
 Merujuk ke `Verification Prompt P0-04` di `subscription-verification-prompts.md`.
