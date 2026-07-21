@@ -22,8 +22,7 @@ function projectSearchProjection(project: (typeof dummyProjects)[number]): Searc
   };
 }
 
-const aquaLoopProject =
-  dummyProjects.find((p) => p.slug === "aqua-loop") ?? dummyProjects[0];
+const aquaLoopProject = dummyProjects.find((p) => p.slug === "aqua-loop")!;
 
 export type SearchScope =
   | "projects"
