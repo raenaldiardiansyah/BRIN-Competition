@@ -1,6 +1,16 @@
+"use client";
+
 import Link from "next/link";
+import { useReducedMotion } from "motion/react";
 import SpotlightCard from "@/components/react-bits/SpotlightCard";
 import type { AIFeature } from "../types";
+
+const featureCta: Record<AIFeature["id"], string> = {
+  "collaboration-matching": "Mulai pencocokan", "innovation-profile": "Analisis profil",
+  "innovation-workspace": "Buka workspace", "research-gap": "Temukan gap riset",
+  "novelty-checker": "Cek indikasi kebaruan", "industry-matching": "Cari mitra industri",
+  "funding-recommendation": "Temukan pendanaan", commercialization: "Susun jalur komersialisasi",
+};
 
 export function AIFeatureCard({
   feature,
@@ -11,19 +21,21 @@ export function AIFeatureCard({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const reducedMotion = useReducedMotion();
+  const organizationOnly = feature.access.tiers.length === 1 && feature.access.tiers[0] === "organization";
   const card = (
     <article className={`ai-feature-card${selected ? " selected" : ""}`}>
       <button type="button" onClick={onSelect} aria-pressed={selected}>
-        <span>{feature.maturity === "mvp" ? "MVP utama" : "Advanced prototype"}</span>
+        <span>{organizationOnly ? "Organization" : feature.maturity === "mvp" ? "MVP utama" : "Pro"}</span>
         <h3>{feature.title}</h3>
         <p>{feature.description}</p>
-        <small>{feature.access.tiers.join(" · ")}</small>
+        <small>{organizationOnly ? "Preview tersedia · akses penuh memerlukan workspace Organization" : "Termasuk dalam Pro Individual"}</small>
       </button>
-      <Link href={feature.route}>Buka fitur</Link>
+      <Link href={feature.route}>{organizationOnly ? "Cari mitra industri" : featureCta[feature.id]}</Link>
     </article>
   );
 
-  if (selected && feature.maturity === "mvp") {
+  if (selected && feature.maturity === "mvp" && !reducedMotion) {
     return (
       <SpotlightCard
         className="ai-feature-spotlight"
