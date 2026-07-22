@@ -1031,90 +1031,178 @@ export function GuestHome() {
               {/* Dynamic rotation rendering based on activeFeaturedProjectId */}
               {activeFeaturedProjectId === 'proj-river-watch' ? (
                 <>
-                  <div className="pl-person-row">
-                    <span className="pl-avatar large">🤖</span>
+                  <div className="pl-person-row tw:border-b tw:border-slate-100 tw:pb-3 tw:mb-3">
+                    <span className="pl-avatar large tw:bg-indigo-50 tw:text-indigo-600">🤖</span>
                     <div>
-                      <strong>Explainable Matching AI</strong>
-                      <span>Kecocokan Talenta &amp; Peran</span>
+                      <strong className="tw:text-slate-900 tw:text-base">Explainable Matching AI</strong>
+                      <span className="tw:text-xs tw:text-slate-500">Kecocokan dengan AquaLoop</span>
                     </div>
-                    <span className="pl-status success">Match 88% (Tinggi)</span>
+                    <span className="pl-status success tw:bg-indigo-50 tw:text-indigo-700 tw:border-indigo-200">
+                      Match Score: 68%
+                    </span>
                   </div>
-                  <div className="pl-evidence-block">
-                    <Sparkle size={24} weight="duotone" />
+
+                  <div className="tw:space-y-3">
                     <div>
-                      <strong>Skill Fit: 92% · Relevansi Bukti: High</strong>
-                      <span>Celah: Perlu konfirmasi ketersediaan 10 jam/minggu</span>
+                      <div className="tw:flex tw:justify-between tw:text-xs tw:font-semibold tw:text-slate-700 tw:mb-1">
+                        <span>Match Score</span>
+                        <span>68% (Medium Confidence)</span>
+                      </div>
+                      <div className="tw:w-full tw:bg-slate-100 tw:rounded-full tw:h-2">
+                        <div className="tw:bg-indigo-600 tw:h-2 tw:rounded-full" style={{ width: '68%' }} />
+                      </div>
+                    </div>
+
+                    <div className="tw:bg-slate-50 tw:p-3 tw:rounded-lg tw:border tw:border-slate-100 tw:text-xs tw:space-y-1.5">
+                      <div className="tw:font-semibold tw:text-slate-800 tw:mb-1">Alasan utama kecocokan:</div>
+                      <div className="tw:text-emerald-700 tw:flex tw:items-center tw:gap-1.5">
+                        <CheckCircle size={14} weight="fill" className="tw:flex-shrink-0" />
+                        <span>Embedded systems &amp; firmware sesuai</span>
+                      </div>
+                      <div className="tw:text-emerald-700 tw:flex tw:items-center tw:gap-1.5">
+                        <CheckCircle size={14} weight="fill" className="tw:flex-shrink-0" />
+                        <span>Evidence firmware relevan terverifikasi</span>
+                      </div>
+                      <div className="tw:text-amber-700 tw:flex tw:items-center tw:gap-1.5">
+                        <span className="tw:font-bold tw:w-3.5 tw:text-center">!</span>
+                        <span>Deployment lapangan masih menjadi gap</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="pl-proof-row">
-                    <span><CheckCircle size={16} /> 2 Repo IoT/ESP32</span>
-                    <span><CheckCircle size={16} /> Skema CAD Terverifikasi</span>
+
+                  <div className="tw:mt-4 tw:pt-3 tw:border-t tw:border-slate-100 tw:flex tw:items-center tw:justify-between">
+                    <span className="tw:text-[11px] tw:text-slate-400">Model v2.4 · Explainable AI</span>
+                    <Anchor href="/matches/aqua-maya" className="tw:text-xs tw:font-semibold tw:text-indigo-600 hover:tw:text-indigo-800 tw:flex tw:items-center tw:gap-1">
+                      Lihat alasan lengkap →
+                    </Anchor>
                   </div>
                 </>
               ) : activeFeaturedProjectId === 'proj-aqua-loop' ? (
                 <>
-                  <div className="pl-person-row">
-                    <span className="pl-avatar large">📄</span>
+                  <div className="pl-person-row tw:border-b tw:border-slate-100 tw:pb-3 tw:mb-3">
+                    <span className="pl-avatar large tw:bg-emerald-50 tw:text-emerald-600">📄</span>
                     <div>
-                      <strong>Evidence Summary AI</strong>
-                      <span>Kategori &amp; Transparansi Bukti</span>
+                      <strong className="tw:text-slate-900 tw:text-base">Evidence Summary AI</strong>
+                      <span className="tw:text-xs tw:text-slate-500">Transparansi Artifact Bukti</span>
                     </div>
-                    <span className="pl-status success">3 Terverifikasi</span>
+                    <span className="pl-status success tw:bg-emerald-50 tw:text-emerald-700 tw:border-emerald-200">
+                      4 Evidence Ditemukan
+                    </span>
                   </div>
-                  <div className="pl-evidence-block">
-                    <ClipboardText size={24} weight="duotone" />
-                    <div>
-                      <strong>2 Repo GitHub, 1 Skema CAD Terverifikasi</strong>
-                      <span>Terdaftar 4 bukti tersedia (3 terverifikasi, 1 self-reported)</span>
+
+                  <div className="tw:space-y-2 tw:text-xs">
+                    <div className="tw:flex tw:items-center tw:justify-between tw:p-2 tw:bg-slate-50 tw:rounded-md tw:border tw:border-slate-100">
+                      <span className="tw:font-medium tw:text-slate-800 tw:flex tw:items-center tw:gap-1.5">
+                        <LinkSimple size={14} className="tw:text-slate-400" /> Repository firmware
+                      </span>
+                      <span className="tw:px-2 tw:py-0.5 tw:bg-emerald-100 tw:text-emerald-800 tw:font-semibold tw:rounded tw:text-[10px]">Verified</span>
+                    </div>
+                    <div className="tw:flex tw:items-center tw:justify-between tw:p-2 tw:bg-slate-50 tw:rounded-md tw:border tw:border-slate-100">
+                      <span className="tw:font-medium tw:text-slate-800 tw:flex tw:items-center tw:gap-1.5">
+                        <ClipboardText size={14} className="tw:text-slate-400" /> Dataset lapangan
+                      </span>
+                      <span className="tw:px-2 tw:py-0.5 tw:bg-emerald-100 tw:text-emerald-800 tw:font-semibold tw:rounded tw:text-[10px]">Verified</span>
+                    </div>
+                    <div className="tw:flex tw:items-center tw:justify-between tw:p-2 tw:bg-slate-50 tw:rounded-md tw:border tw:border-slate-100">
+                      <span className="tw:font-medium tw:text-slate-800 tw:flex tw:items-center tw:gap-1.5">
+                        <ClipboardText size={14} className="tw:text-slate-400" /> Laporan pengujian
+                      </span>
+                      <span className="tw:px-2 tw:py-0.5 tw:bg-amber-100 tw:text-amber-800 tw:font-semibold tw:rounded tw:text-[10px]">Pending</span>
+                    </div>
+                    <div className="tw:flex tw:items-center tw:justify-between tw:p-2 tw:bg-slate-50 tw:rounded-md tw:border tw:border-slate-100">
+                      <span className="tw:font-medium tw:text-slate-800 tw:flex tw:items-center tw:gap-1.5">
+                        <ClipboardText size={14} className="tw:text-slate-400" /> Spesifikasi teknis
+                      </span>
+                      <span className="tw:px-2 tw:py-0.5 tw:bg-slate-200 tw:text-slate-700 tw:font-semibold tw:rounded tw:text-[10px]">Restricted</span>
                     </div>
                   </div>
-                  <div className="pl-proof-row">
-                    <span><CheckCircle size={16} /> Verified GitHub</span>
-                    <span><ClipboardText size={16} /> Self-reported Test Log</span>
+
+                  <div className="tw:mt-3 tw:pt-2 tw:border-t tw:border-slate-100 tw:flex tw:items-center tw:justify-between tw:text-xs">
+                    <span className="tw:text-slate-500 tw:font-medium">2 verified · 1 pending · 1 restricted</span>
+                    <Anchor href="/projects/aqua-loop/contributions" className="tw:font-semibold tw:text-emerald-600 hover:tw:text-emerald-800 tw:flex tw:items-center tw:gap-1">
+                      Lihat evidence →
+                    </Anchor>
                   </div>
                 </>
               ) : activeFeaturedProjectId === 'proj-urban-heat' ? (
                 <>
-                  <div className="pl-person-row">
-                    <span className="pl-avatar large">📊</span>
+                  <div className="pl-person-row tw:border-b tw:border-slate-100 tw:pb-3 tw:mb-3">
+                    <span className="pl-avatar large tw:bg-sky-50 tw:text-sky-600">📊</span>
                     <div>
-                      <strong>Project Readiness Assessment</strong>
-                      <span>Evaluasi Tahap &amp; Maturitas</span>
+                      <strong className="tw:text-slate-900 tw:text-base">Project Readiness AI</strong>
+                      <span className="tw:text-xs tw:text-slate-500">Evaluasi Maturitas Proyek</span>
                     </div>
-                    <span className="pl-status info">PROTOTYPE</span>
-                  </div>
-                  <div className="pl-evidence-block">
-                    <Target size={24} weight="duotone" />
-                    <div>
-                      <strong>Status: PROTOTYPE · Self-reported</strong>
-                      <span>Proyek memiliki arsitektur awal &amp; skema data sensor lengkap</span>
+                    <div className="tw:flex tw:gap-1">
+                      <span className="pl-status info tw:bg-sky-100 tw:text-sky-800 tw:font-bold">PROTOTYPE</span>
                     </div>
                   </div>
-                  <div className="pl-proof-row">
-                    <span><CheckCircle size={16} /> Architecture Diagram</span>
-                    <span><CheckCircle size={16} /> Sensor Field Test</span>
+
+                  <div className="tw:text-xs tw:text-slate-500 tw:mb-3">
+                    Sumber penilaian: <strong className="tw:text-slate-700">Self-reported &amp; AI Verified</strong>
+                  </div>
+
+                  <div className="tw:grid tw:grid-cols-2 tw:gap-2 tw:text-xs">
+                    <div className="tw:bg-emerald-50/60 tw:p-2.5 tw:rounded-lg tw:border tw:border-emerald-100 tw:space-y-1">
+                      <div className="tw:font-semibold tw:text-emerald-900 tw:mb-1.5">✓ Sudah tersedia</div>
+                      <div className="tw:text-emerald-800">• Prototype sensor</div>
+                      <div className="tw:text-emerald-800">• Dataset awal</div>
+                      <div className="tw:text-emerald-800">• Tim aktif</div>
+                    </div>
+                    <div className="tw:bg-amber-50/60 tw:p-2.5 tw:rounded-lg tw:border tw:border-amber-100 tw:space-y-1">
+                      <div className="tw:font-semibold tw:text-amber-900 tw:mb-1.5">! Masih dibutuhkan</div>
+                      <div className="tw:text-amber-800">• Deployment plan</div>
+                      <div className="tw:text-amber-800">• Mitra pengujian</div>
+                    </div>
+                  </div>
+
+                  <div className="tw:mt-4 tw:pt-3 tw:border-t tw:border-slate-100 tw:flex tw:items-center tw:justify-between">
+                    <span className="tw:text-[11px] tw:text-slate-400">Score readiness 74%</span>
+                    <Anchor href="/projects/aqua-loop" className="tw:text-xs tw:font-semibold tw:text-sky-600 hover:tw:text-sky-800 tw:flex tw:items-center tw:gap-1">
+                      Lihat kesiapan proyek →
+                    </Anchor>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="pl-person-row">
-                    <span className="pl-avatar large">💡</span>
+                  <div className="pl-person-row tw:border-b tw:border-slate-100 tw:pb-3 tw:mb-3">
+                    <span className="pl-avatar large tw:bg-purple-50 tw:text-purple-600">💡</span>
                     <div>
-                      <strong>Collaboration Insight AI</strong>
-                      <span>Rekomendasi Tindakan Selanjutnya</span>
+                      <strong className="tw:text-slate-900 tw:text-base">Collaboration Insight AI</strong>
+                      <span className="tw:text-xs tw:text-slate-500">Rekomendasi Tindakan Selanjutnya</span>
                     </div>
-                    <span className="pl-status success">Actionable</span>
+                    <span className="pl-status success tw:bg-purple-50 tw:text-purple-700 tw:border-purple-200">
+                      Actionable
+                    </span>
                   </div>
-                  <div className="pl-evidence-block">
-                    <Handshake size={24} weight="duotone" />
-                    <div>
-                      <strong>Rekomendasi Diskusi Firmware</strong>
-                      <span>Ajukan diskusi kebutuhan spesifikasi sebelum sprint minggu depan</span>
+
+                  <div className="tw:bg-slate-50 tw:p-3 tw:rounded-lg tw:border tw:border-slate-200/80 tw:mb-3">
+                    <div className="tw:flex tw:items-center tw:gap-1.5 tw:font-semibold tw:text-slate-900 tw:text-xs tw:mb-1">
+                      <Handshake size={16} className="tw:text-purple-600" />
+                      <span>Rekomendasi Diskusi Firmware</span>
                     </div>
+                    <p className="tw:text-xs tw:text-slate-600 tw:m-0">
+                      Diskusikan spesifikasi firmware sebelum sprint minggu depan.
+                    </p>
                   </div>
-                  <div className="pl-proof-row">
-                    <span><RocketLaunch size={16} /> Ready for Sprint</span>
-                    <span><UsersThree size={16} /> 3 Members Active</span>
+
+                  <div className="tw:text-xs tw:text-slate-600 tw:mb-3 tw:space-y-1 tw:bg-purple-50/50 tw:p-2.5 tw:rounded-md">
+                    <div className="tw:font-semibold tw:text-purple-900">Mengapa direkomendasikan?</div>
+                    <p className="tw:m-0 tw:text-[11px] tw:text-purple-800">
+                      Evidence firmware sudah tersedia dan tiga anggota aktif, tetapi parameter deployment belum disepakati.
+                    </p>
+                  </div>
+
+                  <div className="tw:flex tw:flex-wrap tw:gap-1.5 tw:mb-3">
+                    <span className="tw:px-2 tw:py-0.5 tw:bg-slate-100 tw:text-slate-700 tw:text-[10px] tw:font-medium tw:rounded-full">Ready for Sprint</span>
+                    <span className="tw:px-2 tw:py-0.5 tw:bg-slate-100 tw:text-slate-700 tw:text-[10px] tw:font-medium tw:rounded-full">3 Members Active</span>
+                    <span className="tw:px-2 tw:py-0.5 tw:bg-slate-100 tw:text-slate-700 tw:text-[10px] tw:font-medium tw:rounded-full">Medium Confidence</span>
+                  </div>
+
+                  <div className="tw:pt-2 tw:border-t tw:border-slate-100 tw:flex tw:items-center tw:justify-between">
+                    <span className="tw:text-[11px] tw:text-slate-400">Aksi direkomendasikan</span>
+                    <Anchor href="/collaboration" className="tw:text-xs tw:font-semibold tw:text-purple-600 hover:tw:text-purple-800 tw:flex tw:items-center tw:gap-1">
+                      Mulai diskusi →
+                    </Anchor>
                   </div>
                 </>
               )}
