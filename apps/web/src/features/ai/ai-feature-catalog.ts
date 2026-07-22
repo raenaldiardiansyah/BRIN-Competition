@@ -1,0 +1,13 @@
+import type { AIFeature } from "./types";
+const feature = (id: AIFeature["id"], title: string, description: string, category: AIFeature["category"], maturity: AIFeature["maturity"], tiers: AIFeature["access"]["tiers"], icon: string, limitationSummary: string): AIFeature => ({ id, title, description, route: `/ai/${id}`, category, maturity, access: { tiers, defaultTier: tiers[0], quotaLimited: tiers.includes("free") }, icon, capabilityId: id, limitationSummary });
+export const aiFeatureCatalog: AIFeature[] = [
+  feature("collaboration-matching", "Collaboration Matching", "Membandingkan kebutuhan proyek dengan evidence dan konteks kandidat.", "matching", "mvp", ["free", "pro", "organization"], "UsersThree", "Versi dasar memakai alasan dan evidence prototype."),
+  feature("innovation-profile", "Innovation Profile", "Merangkum kekuatan, evidence, dan gap profil inovasi.", "insight", "mvp", ["free", "pro", "organization"], "IdentificationCard", "Klaim harus ditinjau pengguna dan tidak otomatis terverifikasi."),
+  feature("innovation-workspace", "Innovation Workspace", "Menyusun rekomendasi readiness, milestone, dan tindakan proyek.", "workspace", "mvp", ["free", "pro", "organization"], "Kanban", "Free Core menampilkan rekomendasi terbatas."),
+  feature("research-gap", "Research Gap & Idea Recommendation", "Menata gap penelitian dari konteks proyek yang tersedia.", "strategy", "advanced-prototype", ["pro", "organization"], "LightbulbFilament", "Bukan pengganti telaah literatur atau validasi ilmiah."),
+  feature("novelty-checker", "Novelty Checker", "Membantu menandai aspek yang perlu dibandingkan dengan prior art.", "strategy", "advanced-prototype", ["pro", "organization"], "FingerprintSimple", "Tidak menetapkan kebaruan atau status paten."),
+  feature("industry-matching", "Industry Matching", "Memetakan konteks organisasi dan kebutuhan mitra potensial.", "matching", "advanced-prototype", ["organization"], "Buildings", "Tersedia untuk konteks organisasi dan shared AI usage."),
+  feature("funding-recommendation", "Funding Recommendation", "Mengelompokkan kesiapan proyek terhadap tipe pendanaan.", "strategy", "advanced-prototype", ["pro", "organization"], "Bank", "Bukan keputusan kelayakan atau jaminan pendanaan."),
+  feature("commercialization", "Commercialization Assistant", "Membantu menyusun langkah awal menuju validasi dan komersialisasi.", "strategy", "advanced-prototype", ["pro", "organization"], "RocketLaunch", "Bukan nasihat hukum, investasi, atau keputusan pasar."),
+];
+export const getAIFeature = (id: AIFeature["id"]) => aiFeatureCatalog.find((item) => item.id === id);

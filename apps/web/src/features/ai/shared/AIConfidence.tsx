@@ -1,0 +1,3 @@
+import type { AIConfidence as Data } from "../types";
+const tone = { low: "tw:bg-amber-50 tw:text-amber-800", medium: "tw:bg-blue-50 tw:text-blue-800", high: "tw:bg-emerald-50 tw:text-emerald-800" };
+export function AIConfidence({ confidence }: { confidence: Data }) { return <aside className="tw:rounded-xl tw:border tw:border-slate-200 tw:bg-white tw:p-4"><span className={`tw:rounded-full tw:px-2.5 tw:py-1 tw:text-xs tw:font-bold ${tone[confidence.level]}`}>Confidence: {confidence.label}</span><p className="tw:mt-2 tw:text-sm tw:leading-relaxed tw:text-slate-600">{confidence.description}</p></aside>; }

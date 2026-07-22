@@ -1,0 +1,1 @@
+export const industryMatchingDummy = { id: "industry-aqua", status: "empty" as const, result: "Belum ada mitra industri yang cocok dalam data prototype.", limitation: "Data partner industri belum tersedia pada prototype." };

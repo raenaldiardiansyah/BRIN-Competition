@@ -1,0 +1,1 @@
+export const noveltyCheckerDummy = { id: "novelty-aqua", status: "result" as const, result: "Bandingkan arsitektur sensor, metode kalibrasi, dan konteks distribusi sebelum mengklaim kebaruan.", limitation: "Tidak menetapkan status paten atau kebaruan." };

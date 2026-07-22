@@ -1,0 +1,1 @@
+export const commercializationDummy = { id: "commercialization-aqua", status: "recovery" as const, result: "Mulai dengan validasi kebutuhan pengguna dan bukti uji lapangan.", limitation: "Bukan nasihat investasi, hukum, atau keputusan pasar." };

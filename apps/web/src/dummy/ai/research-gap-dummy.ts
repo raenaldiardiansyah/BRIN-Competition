@@ -1,0 +1,1 @@
+export const researchGapDummy = { id: "research-gap-aqua", status: "result" as const, result: "Perlu validasi kesenjangan antara monitoring kualitas air dan distribusi berbasis sensor.", limitation: "Bukan telaah literatur atau rekomendasi ilmiah final." };

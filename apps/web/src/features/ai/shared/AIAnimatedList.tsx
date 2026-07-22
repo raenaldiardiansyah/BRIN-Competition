@@ -1,0 +1,4 @@
+"use client";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import type { ReactNode } from "react";
+export function AIAnimatedList<T extends { id: string }>({ items, renderItem, empty }: { items: T[]; renderItem: (item: T) => ReactNode; empty?: ReactNode }) { const reduced = useReducedMotion(); if (!items.length) return <>{empty ?? <p>Belum ada aktivitas.</p>}</>; return <div role="list"><AnimatePresence initial={false}>{items.map((item, index) => <motion.div key={item.id} role="listitem" initial={reduced ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={reduced ? undefined : { opacity: 0, y: -4 }} transition={reduced ? { duration: 0 } : { duration: 0.2, delay: Math.min(index * 0.04, 0.2) }}>{renderItem(item)}</motion.div>)}</AnimatePresence></div>; }

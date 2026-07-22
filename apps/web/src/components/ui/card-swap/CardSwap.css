@@ -1,0 +1,110 @@
+.project-card-swap__container {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  height: 310px;
+  perspective: 900px;
+  overflow: visible;
+  margin-inline: auto;
+}
+
+.project-card-swap__card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(320px, 100%, 420px);
+  height: clamp(240px, 100%, 300px);
+  border-radius: 16px;
+  border: 1px solid rgba(34, 83, 178, 0.12);
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 12px 32px rgba(35, 66, 120, 0.08);
+  color: var(--text-dark, #1e293b);
+  transform-style: preserve-3d;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  cursor: pointer;
+  outline: none;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.project-card-swap__card:focus-visible {
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.24), 0 12px 32px rgba(35, 66, 120, 0.08);
+}
+
+/* Mobile Swapping Styles */
+.project-card-swap__container--mobile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100% !important;
+  height: auto !important;
+  gap: 16px;
+  perspective: none;
+  margin-top: 16px;
+}
+
+.project-card-swap__mobile-card-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.project-card-swap__mobile-card-wrapper .project-card-swap__card {
+  position: relative;
+  top: auto;
+  left: auto;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 420px;
+  height: auto !important;
+  min-height: 200px;
+  opacity: 1 !important;
+  box-shadow: 0 8px 24px rgba(35, 66, 120, 0.06);
+}
+
+.project-card-swap__mobile-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.project-card-swap__mobile-counter {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted, #64748b);
+}
+
+@media (max-width: 1024px) {
+  .project-card-swap__container {
+    height: 280px;
+  }
+}
+
+@media (max-width: 768px) {
+  .project-card-swap__container {
+    height: auto;
+  }
+}
+
+/* Reduced motion styling rules */
+@media (prefers-reduced-motion: reduce) {
+  .project-card-swap__container {
+    perspective: none;
+    transform: none;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    margin: 20px auto;
+  }
+  .project-card-swap__card {
+    transform-style: flat;
+    transition: opacity 0.3s !important;
+  }
+}

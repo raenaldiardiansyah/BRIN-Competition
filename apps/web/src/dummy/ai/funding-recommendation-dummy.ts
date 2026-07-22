@@ -1,0 +1,1 @@
+export const fundingRecommendationDummy = { id: "funding-aqua", status: "result" as const, result: "Proyek dapat menyiapkan ringkasan readiness dan evidence uji lapangan untuk evaluasi peluang pendanaan.", limitation: "Bukan keputusan atau jaminan pendanaan." };

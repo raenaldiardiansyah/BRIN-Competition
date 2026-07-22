@@ -1,0 +1,2 @@
+import type { AIEvidenceSource } from "../types";
+export function AIEvidenceSources({ sources }: { sources: AIEvidenceSource[] }) { if (!sources.length) return <p>Belum ada evidence atau sumber yang dapat ditampilkan.</p>; return <section><h2>Evidence dan sumber</h2><ul>{sources.map((source) => <li key={source.id}><strong>{source.title}</strong><p>{source.type} · {source.source} · {source.status}</p>{source.note ? <small>{source.note}</small> : null}</li>)}</ul></section>; }

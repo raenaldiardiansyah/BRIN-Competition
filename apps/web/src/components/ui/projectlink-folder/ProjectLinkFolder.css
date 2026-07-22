@@ -1,0 +1,119 @@
+/* --- PROJECTLINK FOLDER COMPONENT STYLES --- */
+
+.pl-projectlink-folder {
+  position: relative;
+  width: 140px;
+  height: 100px;
+  cursor: pointer;
+  perspective: 800px;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  user-select: none;
+}
+
+.pl-projectlink-folder:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* Back part of folder */
+.pl-projectlink-folder__back {
+  position: absolute;
+  inset: 0;
+  background: var(--folder-back-color);
+  border-radius: 12px;
+  border-top-left-radius: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 4px 12px rgba(6, 36, 90, 0.08);
+}
+
+/* Small tab of the folder at the top left of the back cover */
+.pl-projectlink-folder__tab {
+  position: absolute;
+  top: -14px;
+  left: 0;
+  width: 55px;
+  height: 14px;
+  background: var(--folder-back-color);
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+/* Papers container */
+.pl-projectlink-folder__papers {
+  position: absolute;
+  inset: 8px;
+  bottom: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+/* Single paper style (peeks out slightly when closed) */
+.pl-projectlink-folder__paper {
+  position: absolute;
+  inset: 4px;
+  bottom: 4px;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(6, 36, 90, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s, z-index 0.4s;
+  transform: translateY(-8px) rotate(calc(var(--paper-index) * 2deg - 2deg));
+  padding: 10px;
+  color: var(--text-dark);
+  font-family: inherit;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.pl-projectlink-folder__paper strong {
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+/* Front flap of folder with gradient */
+.pl-projectlink-folder__front {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, var(--folder-color-start), var(--folder-color-end));
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 12px;
+  transform-origin: bottom center;
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), filter 0.4s, box-shadow 0.4s;
+  box-shadow: 0 18px 34px var(--folder-shadow-color), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  z-index: 5;
+}
+
+/* --- STATE: OPENED --- */
+.pl-projectlink-folder--open .pl-projectlink-folder__front {
+  transform: rotateX(-50deg);
+  filter: brightness(0.9);
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.2), 0 2px 8px rgba(6, 36, 90, 0.08);
+}
+
+.pl-projectlink-folder--open .pl-projectlink-folder__paper {
+  /* Lift papers up and fan them out when open */
+  transform: translateY(calc(-48px - var(--paper-index) * 24px)) rotate(calc(var(--paper-index) * 3deg - 3deg));
+  z-index: 10;
+  box-shadow: 0 12px 24px rgba(6, 36, 90, 0.12), 0 4px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* --- STATE: DISMISSED (Slide up & Fade out) --- */
+.pl-projectlink-folder__paper--dismissed {
+  opacity: 0 !important;
+  transform: translateY(-135px) rotate(12deg) scale(0.75) !important;
+  pointer-events: none !important;
+}
+
+/* Hover slightly peeks papers out when folder is closed */
+.pl-projectlink-folder:hover:not(.pl-projectlink-folder--open) .pl-projectlink-folder__paper {
+  transform: translateY(-18px) rotate(calc(var(--paper-index) * 2.5deg - 2.5deg));
+}

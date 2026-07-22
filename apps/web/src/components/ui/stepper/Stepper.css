@@ -1,0 +1,203 @@
+.projectlink-stepper {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.projectlink-stepper__container {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 20px;
+  background: var(--bg-1, #ffffff);
+  border: 1px solid var(--border-light, rgba(34, 83, 178, 0.12));
+  box-shadow: 0 10px 30px rgba(35, 66, 120, 0.05);
+  box-sizing: border-box;
+  padding: 24px;
+}
+
+.projectlink-stepper__row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-light, rgba(34, 83, 178, 0.12));
+  box-sizing: border-box;
+}
+
+.projectlink-stepper__content-wrapper {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  margin-top: 20px;
+  min-height: 280px;
+}
+
+.projectlink-stepper__step {
+  padding-left: 4px;
+  padding-right: 4px;
+  box-sizing: border-box;
+}
+
+.projectlink-stepper__footer {
+  padding-top: 16px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border-light, rgba(34, 83, 178, 0.12));
+  box-sizing: border-box;
+}
+
+.projectlink-stepper__footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.projectlink-stepper__footer-progress {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+}
+
+.projectlink-stepper__footer-btns {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.projectlink-stepper__back-btn {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  color: var(--text-muted, #64748b);
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.projectlink-stepper__back-btn:hover {
+  background: var(--bg-2, #f1f5f9);
+  color: var(--text-dark, #1e293b);
+}
+
+.projectlink-stepper__back-btn.inactive {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.projectlink-stepper__next-btn {
+  border: none;
+  background-color: var(--primary, #3b82f6);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.projectlink-stepper__next-btn:hover {
+  background-color: var(--primary-hover, #2563eb);
+}
+
+.projectlink-stepper__indicator-btn {
+  border: none;
+  background: transparent;
+  padding: 4px 8px;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  transition: opacity 0.2s;
+}
+
+.projectlink-stepper__indicator-btn:focus-visible .projectlink-stepper__indicator-inner {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+}
+
+.projectlink-stepper__indicator-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  transition: color 0.2s;
+}
+
+.projectlink-stepper__indicator-btn--active .projectlink-stepper__indicator-label {
+  color: var(--primary, #3b82f6);
+  font-weight: 700;
+}
+
+.projectlink-stepper__indicator-btn--complete .projectlink-stepper__indicator-label {
+  color: var(--text-dark, #1e293b);
+}
+
+.projectlink-stepper__indicator-inner {
+  display: flex;
+  height: 34px;
+  width: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 1px solid var(--border-light, rgba(34, 83, 178, 0.12));
+}
+
+.projectlink-stepper__step-number {
+  font-family: inherit;
+}
+
+.projectlink-stepper__connector {
+  position: relative;
+  margin-left: 8px;
+  margin-right: 8px;
+  height: 2px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 4px;
+  background-color: var(--border-light, rgba(34, 83, 178, 0.12));
+}
+
+.projectlink-stepper__connector-inner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+}
+
+.projectlink-stepper__check-icon {
+  height: 1rem;
+  width: 1rem;
+}
+
+/* Mobile Stacking Overrides (< 768px) */
+@media (max-width: 767px) {
+  .projectlink-stepper__row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .projectlink-stepper__connector {
+    width: 2px;
+    height: 24px;
+    flex: none;
+    margin-left: 18px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    background-color: var(--border-light, rgba(34, 83, 178, 0.12));
+  }
+  
+  .projectlink-stepper__connector-inner {
+    width: 100%;
+    left: 0;
+    top: 0;
+  }
+}
