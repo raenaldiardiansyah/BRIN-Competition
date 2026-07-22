@@ -132,25 +132,28 @@ export default function Stepper({
 
         {showNavigation && !isCompleted && (
           <div className={`projectlink-stepper__footer ${footerClassName}`}>
-            <div className={`projectlink-stepper__footer-nav ${currentStep !== 1 ? 'spread' : 'end'}`}>
-              {currentStep !== 1 && (
+            <div className="projectlink-stepper__footer-inner">
+              <span className="projectlink-stepper__footer-progress">Tahap {currentStep} dari {totalSteps}</span>
+              <div className="projectlink-stepper__footer-btns">
+                {currentStep !== 1 && (
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className={`projectlink-stepper__back-btn ${currentStep === 1 ? 'inactive' : ''}`}
+                    {...backButtonProps}
+                  >
+                    {backButtonText}
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={handleBack}
-                  className={`projectlink-stepper__back-btn ${currentStep === 1 ? 'inactive' : ''}`}
-                  {...backButtonProps}
+                  onClick={isLastStep ? handleComplete : handleNext}
+                  className="projectlink-stepper__next-btn"
+                  {...nextButtonProps}
                 >
-                  {backButtonText}
+                  {isLastStep ? 'Selesai' : nextButtonText}
                 </button>
-              )}
-              <button
-                type="button"
-                onClick={isLastStep ? handleComplete : handleNext}
-                className="projectlink-stepper__next-btn"
-                {...nextButtonProps}
-              >
-                {isLastStep ? 'Selesai' : nextButtonText}
-              </button>
+              </div>
             </div>
           </div>
         )}

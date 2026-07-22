@@ -4,15 +4,21 @@ import React, { Children, cloneElement, forwardRef, isValidElement, useEffect, u
 import gsap from 'gsap';
 import './CardSwap.css';
 
-export const Card = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & { customClass?: string; isActive?: boolean }>(
-  ({ customClass, isActive, ...rest }, ref) => (
+type CardTransitionRole = 'incoming' | 'outgoing' | null;
+
+export const Card = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement> & {
+  customClass?: string;
+  isActive?: boolean;
+  transitionRole?: CardTransitionRole;
+}>(
+  ({ customClass, isActive, transitionRole, ...rest }, ref) => (
     <div
       ref={ref}
       role="button"
       tabIndex={0}
       aria-pressed={isActive}
       {...rest}
-      className={`project-card-swap__card ${isActive ? 'project-card-swap__card--active' : ''} ${customClass ?? ''} ${rest.className ?? ''}`.trim()}
+      className={`project-card-swap__card ${isActive ? 'project-card-swap__card--active' : ''} ${transitionRole ? `project-card-swap__card--${transitionRole}` : ''} ${customClass ?? ''} ${rest.className ?? ''}`.trim()}
     />
   )
 );
@@ -84,6 +90,10 @@ const CardSwap: React.FC<CardSwapProps> = ({
   const [isReduced, setIsReduced] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const [contentTransition, setContentTransition] = useState<{
+    outgoing: number;
+    incoming: number;
+  } | null>(null);
 
   const isAnimatingRef = useRef(false);
   const isHoveredRef = useRef(false);
@@ -188,6 +198,10 @@ const CardSwap: React.FC<CardSwapProps> = ({
     const [front, ...rest] = order.current;
     const elFront = refs[front].current;
 
+    if (!isReduced) {
+      setContentTransition({ outgoing: front, incoming: rest[0] });
+    }
+
     // Reposition active cards to their correct slot before animating to normalize GSAP state
     tlRef.current?.kill();
     placeAllCardsFromCurrentOrder();
@@ -198,6 +212,7 @@ const CardSwap: React.FC<CardSwapProps> = ({
         isAnimatingRef.current = false;
         const newActive = rest[0];
         setActiveCardIndex(newActive);
+        setContentTransition(null);
         onActiveCardChange?.(newActive);
         scheduleNextSwap(delay);
       }
@@ -279,6 +294,14 @@ const CardSwap: React.FC<CardSwapProps> = ({
 
     isAnimatingRef.current = true;
     clearSwapTimer();
+
+    const outgoingIndex = order.current[0];
+    if (isReduced) {
+      setActiveCardIndex(clickedIdx);
+      onActiveCardChange?.(clickedIdx);
+    } else {
+      setContentTransition({ outgoing: outgoingIndex, incoming: clickedIdx });
+    }
     
     // Normalization: kill timeline and reset to normalized slots
     tlRef.current?.kill();
@@ -293,8 +316,11 @@ const CardSwap: React.FC<CardSwapProps> = ({
       onComplete: () => {
         order.current = newOrder;
         isAnimatingRef.current = false;
-        setActiveCardIndex(clickedIdx);
-        onActiveCardChange?.(clickedIdx);
+        if (!isReduced) {
+          setActiveCardIndex(clickedIdx);
+          onActiveCardChange?.(clickedIdx);
+        }
+        setContentTransition(null);
         scheduleNextSwap(delay);
       }
     });
@@ -392,7 +418,13 @@ const CardSwap: React.FC<CardSwapProps> = ({
             height: isMobile ? 'auto' : height, 
             ...((child.props as any).style ?? {}) 
           },
-          isActive: order.current[0] === i,
+          isActive: activeCardIndex === i,
+          transitionRole:
+            contentTransition?.incoming === i
+              ? 'incoming'
+              : contentTransition?.outgoing === i
+                ? 'outgoing'
+                : null,
           onClick: (e: React.MouseEvent) => {
             (child.props as any).onClick?.(e);
             promoteToFront(i);

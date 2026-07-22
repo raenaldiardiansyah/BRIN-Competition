@@ -26,7 +26,6 @@ import { useEffect, useRef, useState } from "react";
 import { announce } from "./accessibility";
 import ProjectLinkFolder from "../ui/projectlink-folder/ProjectLinkFolder";
 import CardSwap, { Card } from "../ui/card-swap/CardSwap";
-import Stepper, { Step } from "../ui/stepper/Stepper";
 import { featuredProjects, FeaturedProject, OpenNeed } from "../../data/guest-homepage-projects";
 import { SubscriptionData, deriveAIUsageStatus } from "../../types/domain/subscription";
 
@@ -296,9 +295,6 @@ export function GuestHome() {
   const [pendingIntent, setPendingIntent] = useState<PendingIntent | null>(null);
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [isOwnedProjectDialogOpen, setIsOwnedProjectDialogOpen] = useState(false);
-
-  // Stepper state
-  const [activeCollaborationStep, setActiveCollaborationStep] = useState(1);
 
   const inspectorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -950,8 +946,8 @@ export function GuestHome() {
             <div className="pl-featured-card-swap-wrap">
               <CardSwap
                 width="100%"
-                height="100%"
-                cardDistance={24}
+                height={330}
+                cardDistance={16}
                 verticalDistance={26}
                 delay={2000}
                 interactionPauseDuration={10000}
@@ -1257,59 +1253,6 @@ export function GuestHome() {
                   <span className="pl-matching-chart__value">{bar.value}%</span>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Alur Kolaborasi - Stepper compact interaktif explainer */}
-      <section className="pl-section pl-collaboration-workflow-section">
-        <div className="pl-guest-container">
-          <SectionTitle 
-            eyebrow="Cara kerja" 
-            title="Dari Kebutuhan Menuju Kolaborasi" 
-            description="Eksplorasi tahapan interaktif bagaimana kontribusi diverifikasi dan dimulai."
-          />
-          
-          <div className="pl-collaboration-stepper-wrap">
-            <div className="pl-stepper-explainer">
-              <Stepper
-                initialStep={activeCollaborationStep}
-                showNavigation={false}
-                onStepChange={setActiveCollaborationStep}
-                stepLabels={["Temukan Proyek", "Periksa Evidence", "Pilih Kebutuhan", "Mulai Kolaborasi", "Pantau Status"]}
-              >
-                <Step>
-                  <div className="pl-stepper-slide">
-                    <h3>01. Temukan Proyek</h3>
-                    <p>Eksplorasi proyek-proyek riil yang didaftarkan organisasi di bawah BRIN. Cari proyek berdasarkan tema riset, ketersediaan, atau lokasi terdekat Anda.</p>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="pl-stepper-slide">
-                    <h3>02. Periksa Evidence</h3>
-                    <p>Setiap proyek publik menampilkan tautan repositori kode, catatan kalibrasi sensor, atau dokumen pendukung. Anda dapat memverifikasi kualitas pekerjaan secara mandiri.</p>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="pl-stepper-slide">
-                    <h3>03. Pilih Kebutuhan</h3>
-                    <p>Sesuaikan keahlian dan ketersediaan waktu Anda dengan daftar Open Need yang diposting oleh manajer proyek untuk memulai kemitraan.</p>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="pl-stepper-slide">
-                    <h3>04. Mulai Kolaborasi</h3>
-                    <p>Ajukan kesiapan Anda. Sistem matching kami secara otomatis melampirkan evidence portofolio Anda sebelumnya ke dalam usulan kolaborasi.</p>
-                  </div>
-                </Step>
-                <Step>
-                  <div className="pl-stepper-slide">
-                    <h3>05. Pantau Status</h3>
-                    <p>Lihat status progres kontribusi Anda dan progres validasi data secara transparan di dalam workspace terpadu.</p>
-                  </div>
-                </Step>
-              </Stepper>
             </div>
           </div>
         </div>
