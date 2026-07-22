@@ -619,7 +619,6 @@ export function GuestHome() {
             </p>
             <div className="pl-button-row">
               <Anchor href="/explore" className="pl-button pl-button-primary">Jelajahi proyek</Anchor>
-              <Anchor href="/subscription" className="pl-button pl-button-secondary">Lihat Paket</Anchor>
               <button 
                 type="button" 
                 onClick={handleCreateOpportunity} 
