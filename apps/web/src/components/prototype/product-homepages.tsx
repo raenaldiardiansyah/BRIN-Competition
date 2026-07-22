@@ -1006,51 +1006,120 @@ export function GuestHome() {
         </div>
       </section>
 
-      {/* Contribution-Evidence section (Reactive to selected project) */}
-      <section className="pl-section pl-contribution-evidence-section">
+      {/* Explainable AI Showcase Section (Reactive to rotating activeProject card) */}
+      <section id="explainable-ai" className="pl-section pl-contribution-evidence-section">
         <div className="pl-guest-container pl-contribution-grid">
           <div className="pl-feature-copy" aria-live="polite">
-            <span className="pl-icon-box"><Medal size={26} weight="duotone" /></span>
-            <p className="pl-eyebrow">Kontribusi yang terlihat</p>
-            <h2>Portofolio yang menjelaskan apa yang benar-benar Anda kerjakan.</h2>
+            <span className="pl-icon-box"><Sparkle size={26} weight="duotone" /></span>
+            <p className="pl-eyebrow">AI YANG DAPAT DIJELASKAN</p>
+            <h2>Lihat bagaimana AI membantu Anda memahami proyek, kontribusi, dan peluang kolaborasi.</h2>
             <p>
-              Hubungkan peran, output, dan bukti pada proyek. Orang lain dapat
-              memahami konteks kontribusi tanpa menebak dari judul pekerjaan.
+              Dari explainable matching hingga ringkasan evidence, fitur AI membantu Anda menilai konteks tanpa kehilangan transparansi.
             </p>
-            <Anchor href={`/profiles/${activeProject.contributions[0]?.person.toLowerCase().split(' ')[0] ?? 'maya'}`}>
-              Lihat contoh profil
-            </Anchor>
+            <div className="pl-button-row tw:mt-4">
+              <Anchor href="/subscription" className="pl-button pl-button-primary">
+                Lihat paket AI <ArrowRight size={17} />
+              </Anchor>
+              <Anchor href="#explainable-ai" className="pl-button pl-button-secondary">
+                Lihat cara kerjanya
+              </Anchor>
+            </div>
           </div>
           
-          {activeProject.contributions[0] && (
-            <div className="pl-contribution-preview-wrap">
-              <div className="pl-evidence-card" aria-live="polite">
-                <div className="pl-person-row">
-                  <span className="pl-avatar large">{activeProject.contributions[0].avatar}</span>
-                  <div>
-                    <strong>{activeProject.contributions[0].person}</strong>
-                    <span>{activeProject.contributions[0].role}</span>
+          <div className="pl-contribution-preview-wrap">
+            <div className="pl-evidence-card" aria-live="polite">
+              {/* Dynamic rotation rendering based on activeFeaturedProjectId */}
+              {activeFeaturedProjectId === 'proj-river-watch' ? (
+                <>
+                  <div className="pl-person-row">
+                    <span className="pl-avatar large">🤖</span>
+                    <div>
+                      <strong>Explainable Matching AI</strong>
+                      <span>Kecocokan Talenta &amp; Peran</span>
+                    </div>
+                    <span className="pl-status success">Match 88% (Tinggi)</span>
                   </div>
-                  <span className="pl-status success">Terverifikasi</span>
-                </div>
-                <div className="pl-evidence-block">
-                  <Code size={24} weight="duotone" />
-                  <div>
-                    <strong>{activeProject.contributions[0].task}</strong>
-                    <span>{activeProject.contributions[0].metric}</span>
+                  <div className="pl-evidence-block">
+                    <Sparkle size={24} weight="duotone" />
+                    <div>
+                      <strong>Skill Fit: 92% · Relevansi Bukti: High</strong>
+                      <span>Celah: Perlu konfirmasi ketersediaan 10 jam/minggu</span>
+                    </div>
                   </div>
-                </div>
-                <div className="pl-proof-row">
-                  {activeProject.contributions[0].proof.map((proofName) => (
-                    <span key={proofName}>
-                      {proofName.toLowerCase().includes('repo') ? <LinkSimple size={16} /> : <ClipboardText size={16} />}
-                      {' '}{proofName}
-                    </span>
-                  ))}
-                </div>
-              </div>
+                  <div className="pl-proof-row">
+                    <span><CheckCircle size={16} /> 2 Repo IoT/ESP32</span>
+                    <span><CheckCircle size={16} /> Skema CAD Terverifikasi</span>
+                  </div>
+                </>
+              ) : activeFeaturedProjectId === 'proj-aqua-loop' ? (
+                <>
+                  <div className="pl-person-row">
+                    <span className="pl-avatar large">📄</span>
+                    <div>
+                      <strong>Evidence Summary AI</strong>
+                      <span>Kategori &amp; Transparansi Bukti</span>
+                    </div>
+                    <span className="pl-status success">3 Terverifikasi</span>
+                  </div>
+                  <div className="pl-evidence-block">
+                    <ClipboardText size={24} weight="duotone" />
+                    <div>
+                      <strong>2 Repo GitHub, 1 Skema CAD Terverifikasi</strong>
+                      <span>Terdaftar 4 bukti tersedia (3 terverifikasi, 1 self-reported)</span>
+                    </div>
+                  </div>
+                  <div className="pl-proof-row">
+                    <span><CheckCircle size={16} /> Verified GitHub</span>
+                    <span><ClipboardText size={16} /> Self-reported Test Log</span>
+                  </div>
+                </>
+              ) : activeFeaturedProjectId === 'proj-urban-heat' ? (
+                <>
+                  <div className="pl-person-row">
+                    <span className="pl-avatar large">📊</span>
+                    <div>
+                      <strong>Project Readiness Assessment</strong>
+                      <span>Evaluasi Tahap &amp; Maturitas</span>
+                    </div>
+                    <span className="pl-status info">PROTOTYPE</span>
+                  </div>
+                  <div className="pl-evidence-block">
+                    <Target size={24} weight="duotone" />
+                    <div>
+                      <strong>Status: PROTOTYPE · Self-reported</strong>
+                      <span>Proyek memiliki arsitektur awal &amp; skema data sensor lengkap</span>
+                    </div>
+                  </div>
+                  <div className="pl-proof-row">
+                    <span><CheckCircle size={16} /> Architecture Diagram</span>
+                    <span><CheckCircle size={16} /> Sensor Field Test</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="pl-person-row">
+                    <span className="pl-avatar large">💡</span>
+                    <div>
+                      <strong>Collaboration Insight AI</strong>
+                      <span>Rekomendasi Tindakan Selanjutnya</span>
+                    </div>
+                    <span className="pl-status success">Actionable</span>
+                  </div>
+                  <div className="pl-evidence-block">
+                    <Handshake size={24} weight="duotone" />
+                    <div>
+                      <strong>Rekomendasi Diskusi Firmware</strong>
+                      <span>Ajukan diskusi kebutuhan spesifikasi sebelum sprint minggu depan</span>
+                    </div>
+                  </div>
+                  <div className="pl-proof-row">
+                    <span><RocketLaunch size={16} /> Ready for Sprint</span>
+                    <span><UsersThree size={16} /> 3 Members Active</span>
+                  </div>
+                </>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </section>
 
