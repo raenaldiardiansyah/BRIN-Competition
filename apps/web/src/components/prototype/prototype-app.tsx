@@ -2067,10 +2067,27 @@ function AppShell({
               <ActionLink href="/register" variant="primary">Bergabung</ActionLink>
             </>
           ) : (
-            <Link className="context-switch" href={orgContext ? "/home" : "/organization/nusantara"}>
-              <span>{orgContext ? "NX" : "MP"}</span>
-              <span><strong>{orgContext ? dummyOrganizations.find((o) => o.id === "org-nusantara")?.displayName : dummyProfiles.find((p) => p.slug === "maya-pradipta")?.displayName}</strong><small>{orgContext ? "Organisasi · Admin" : `${demo.plan} · Personal`}</small></span>
-            </Link>
+            <div className="tw:flex tw:items-center tw:gap-2">
+              {orgContext ? (
+                <Link
+                  className="tw:text-xs tw:font-medium tw:px-2.5 tw:py-1.5 tw:rounded-lg tw:bg-slate-100 hover:tw:bg-slate-200 tw:text-slate-700 tw:transition-colors"
+                  href="/plans/organization"
+                >
+                  Paket Organisasi
+                </Link>
+              ) : (
+                <Link
+                  className="tw:text-xs tw:font-medium tw:px-2.5 tw:py-1.5 tw:rounded-lg tw:bg-slate-100 hover:tw:bg-slate-200 tw:text-slate-700 tw:transition-colors"
+                  href="/subscription"
+                >
+                  Paket &amp; Penggunaan
+                </Link>
+              )}
+              <Link className="context-switch" href={orgContext ? "/home" : "/organization/nusantara"}>
+                <span>{orgContext ? "NX" : "MP"}</span>
+                <span><strong>{orgContext ? dummyOrganizations.find((o) => o.id === "org-nusantara")?.displayName : dummyProfiles.find((p) => p.slug === "maya-pradipta")?.displayName}</strong><small>{orgContext ? "Organisasi · Admin" : `${demo.plan} · Personal`}</small></span>
+              </Link>
+            </div>
           )}
         </div>
       </header>
