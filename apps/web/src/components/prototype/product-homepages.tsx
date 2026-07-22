@@ -954,7 +954,7 @@ export function GuestHome() {
                 height="100%"
                 cardDistance={24}
                 verticalDistance={26}
-                delay={3000}
+                delay={2000}
                 interactionPauseDuration={10000}
                 pauseOnHover
                 skewAmount={2}
