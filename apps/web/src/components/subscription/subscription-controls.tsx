@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { RadioGroup } from "@base-ui/react/radio-group";
-import { Radio } from "@base-ui/react/radio";
 
 // --- Billing Toggle ---
 
@@ -17,24 +15,32 @@ export function BillingCycleToggle({
   onChange: (value: BillingCycleSelection) => void;
 }) {
   return (
-    <RadioGroup
-      value={value}
-      onValueChange={(val) => onChange(val as BillingCycleSelection)}
-      className="tw:inline-flex tw:bg-slate-100 tw:p-1 tw:rounded-lg tw:border tw:border-slate-200"
-    >
-      <Radio.Root
-        value="monthly"
-        className="tw:px-4 tw:py-1.5 tw:text-sm tw:font-medium tw:rounded-md tw:transition-colors data-[checked]:tw:bg-white data-[checked]:tw:text-slate-900 data-[checked]:tw:shadow-sm tw:text-slate-500 tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400"
+    <div className="tw:inline-flex tw:bg-slate-100 tw:p-1 tw:rounded-xl tw:border tw:border-slate-200" role="group" aria-label="Siklus penagihan">
+      <button
+        type="button"
+        onClick={() => onChange("monthly")}
+        aria-pressed={value === "monthly"}
+        className={`tw:min-h-10 tw:px-5 tw:py-1.5 tw:text-sm tw:font-semibold tw:rounded-lg tw:transition-all tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-indigo-500 focus-visible:tw:ring-offset-2 ${
+          value === "monthly"
+            ? "tw:bg-indigo-600 tw:text-white tw:shadow-sm"
+            : "tw:text-slate-600 hover:tw:text-slate-900"
+        }`}
       >
         Bulanan
-      </Radio.Root>
-      <Radio.Root
-        value="yearly"
-        className="tw:px-4 tw:py-1.5 tw:text-sm tw:font-medium tw:rounded-md tw:transition-colors data-[checked]:tw:bg-white data-[checked]:tw:text-slate-900 data-[checked]:tw:shadow-sm tw:text-slate-500 tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400"
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("yearly")}
+        aria-pressed={value === "yearly"}
+        className={`tw:min-h-10 tw:px-5 tw:py-1.5 tw:text-sm tw:font-semibold tw:rounded-lg tw:transition-all tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-indigo-500 focus-visible:tw:ring-offset-2 ${
+          value === "yearly"
+            ? "tw:bg-indigo-600 tw:text-white tw:shadow-sm"
+            : "tw:text-slate-600 hover:tw:text-slate-900"
+        }`}
       >
         Tahunan
-      </Radio.Root>
-    </RadioGroup>
+      </button>
+    </div>
   );
 }
 

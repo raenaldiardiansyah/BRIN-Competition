@@ -2094,19 +2094,12 @@ function AppShell({
       <main className="page-container" id="main-content" tabIndex={-1}>
         {simulatedState === "normal" ? children : <SimulatedPageState state={simulatedState} onReset={() => setSimulatedState("normal")} />}
       </main>
-      {pathname === "/" ? (
-        <footer className="site-footer site-footer--full-bleed">
-          <div className="site-footer__inner">
-            <div><strong>ProjectLink</strong><span>Project evidence network untuk kolaborasi yang lebih dapat dipercaya.</span></div>
-            <div><Link href="/prototype-map">Sitemap & decisions</Link><Link href="/pricing">Plans</Link><Link href="/settings/privacy">Privacy</Link></div>
-          </div>
-        </footer>
-      ) : (
-        <footer className="site-footer">
+      <footer className="site-footer site-footer--full-bleed">
+        <div className="site-footer__inner">
           <div><strong>ProjectLink</strong><span>Project evidence network untuk kolaborasi yang lebih dapat dipercaya.</span></div>
-          <div><Link href="/prototype-map">Sitemap & decisions</Link><Link href="/pricing">Plans</Link><Link href="/settings/privacy">Privacy</Link></div>
-        </footer>
-      )}
+          <div><Link href="/prototype-map">Sitemap & decisions</Link><Link href="/plans/organization">Plans</Link><Link href="/settings/privacy">Privacy</Link></div>
+        </div>
+      </footer>
     </div>
   );
 }
