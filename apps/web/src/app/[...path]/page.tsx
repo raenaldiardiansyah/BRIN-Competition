@@ -59,6 +59,7 @@ const prototypeRoutes = [
   "organization/nexa-research-lab/pipeline",
   "organization/nexa-research-lab/members",
   "organization/nexa-research-lab/billing",
+  "plans/organization",
   "prototype-map",
   "opportunities/urban-heat",
   "opportunities/urban-heat-mapping",
