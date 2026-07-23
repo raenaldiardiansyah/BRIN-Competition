@@ -1,1 +1,6 @@
-import { AIExperiencePage } from "../AIExperiencePage"; export function FundingRecommendationPage() { return <AIExperiencePage featureId="funding-recommendation" />; }
+import { AIExperiencePage } from "../AIExperiencePage";
+import { AIOrganizationPreview } from "../shared/AIOrganizationPreview";
+
+export function FundingRecommendationPage() {
+  return <AIOrganizationPreview><AIExperiencePage featureId="funding-recommendation" /></AIOrganizationPreview>;
+}

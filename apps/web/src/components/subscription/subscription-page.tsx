@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, Info, X, Buildings, WarningCircle, CaretDown } from "@phosphor-icons/react";
+import { useSearchParams } from "next/navigation";
+import { Check, Info, WarningCircle, CaretDown } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import { tierMatrix, AI_FEATURE_MATRIX } from "@/data/subscription-tiers";
 import { SubscriptionData, SubscriptionSessionOverride, AIUsageStatus } from "@/types/domain/subscription";
-import { BillingCycleToggle, UpgradeDialog, CancelDialog, BillingCycleSelection } from "./subscription-controls";
+import { CancelDialog } from "./subscription-controls";
 import { SubscriptionNotifications } from "./subscription-notifications";
 import Ferrofluid from "@/components/react-bits/Ferrofluid";
 import BlurText from "@/components/react-bits/BlurText";
@@ -68,11 +69,18 @@ export function SubscriptionPage({
 
   const currentPlan = subscription;
   const currentTier = tierMatrix[currentPlan.plan === "none" ? "free" : currentPlan.plan];
+  const searchParams = useSearchParams();
+  const requestedPlan = searchParams.get("plan");
+  const initialSelectedPlan = requestedPlan && requestedPlan in tierMatrix
+    ? requestedPlan as keyof typeof tierMatrix
+    : currentPlan.plan === "none" ? "free" : currentPlan.plan;
   
   // Local state for billing cycle pricing display & FAQ dropdown accordion
-  const [billingCycle, setBillingCycle] = useState<BillingCycleSelection>("monthly");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [aiView, setAiView] = useState<AICapabilityView>("summary");
+  const [selectedPlan, setSelectedPlan] = useState<keyof typeof tierMatrix>(initialSelectedPlan);
+  const [selectionMessage, setSelectionMessage] = useState("");
+  const selectedTier = tierMatrix[selectedPlan];
 
   // AI Usage calculations
   const aiUsed = currentPlan.ai.usage.used;
@@ -88,15 +96,20 @@ export function SubscriptionPage({
   const isCanceled = currentPlan.status === "canceled";
 
   // Actions
-  const handleUpgradeToPro = () => {
-    if (onOverrideChange) {
-      onOverrideChange({
-        planOverride: "pro",
-        scenarioOverride: "default", // Clear scenarios
-        cancelAtPeriodEnd: false,
-        cancelReason: undefined,
-      });
-    }
+  const handlePlanPreview = (plan: keyof typeof tierMatrix) => {
+    setSelectedPlan(plan);
+    setSelectionMessage("");
+    window.history.replaceState(null, "", `/subscription?plan=${plan}`);
+    requestAnimationFrame(() => document.getElementById("selected-plan-detail")?.focus());
+  };
+
+  const handlePlanPreviewKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    plan: keyof typeof tierMatrix,
+  ) => {
+    if (event.key !== "Enter" && event.key !== " " && event.key !== "Spacebar") return;
+    event.preventDefault();
+    handlePlanPreview(plan);
   };
 
   const handleCancelPlan = (reason: string | null) => {
@@ -134,7 +147,7 @@ export function SubscriptionPage({
         <section id="billing-status" tabIndex={-1} className="tw:bg-red-50 tw:border-b tw:border-red-200 tw:px-4 tw:py-3 tw:flex tw:items-center tw:justify-center tw:gap-2 tw:scroll-mt-20 tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-inset focus-visible:tw:ring-red-400">
           <WarningCircle className="tw:w-5 tw:h-5 tw:text-red-600" weight="fill" />
           <p className="tw:text-sm tw:font-medium tw:text-red-900">
-            Pembayaran terakhir Anda gagal. Akses Pro akan ditangguhkan. <a href="#" className="tw:underline hover:tw:text-red-700">Lihat status tagihan</a> atau <a href="#" className="tw:underline hover:tw:text-red-700">Hubungi dukungan</a>.
+            Pembayaran terakhir Anda gagal. Akses Pro akan ditangguhkan. Tinjau status tagihan pada ringkasan paket atau hubungi dukungan melalui kanal resmi.
           </p>
         </section>
       )}
@@ -223,9 +236,12 @@ export function SubscriptionPage({
               <div className="tw:bg-slate-50 tw:rounded-xl tw:border tw:border-slate-200/90 tw:p-5">
                 <div className="tw:flex tw:justify-between tw:items-center tw:mb-2.5">
                   <span className="tw:text-sm tw:font-bold tw:text-slate-900">Kuota AI</span>
-                  <span className="tw:text-xs tw:md:text-sm tw:font-semibold tw:text-slate-600">{aiUsed} dari {currentPlan.ai.usage.limit || '∞'} ({aiPercentage}%)</span>
+                  <span className="tw:text-xs tw:md:text-sm tw:font-semibold tw:text-slate-600">{aiUsed} dari {currentPlan.ai.usage.limit || '∞'} analisis digunakan</span>
                 </div>
                 <AnimatedUsageProgress value={aiPercentage} status={aiStatus} />
+                <p className="tw:text-xs tw:text-slate-600 tw:font-semibold tw:mt-2">
+                  {currentPlan.ai.usage.limit === null ? "Kuota tanpa batas" : `${Math.max(0, currentPlan.ai.usage.limit - aiUsed)} analisis tersisa`}
+                </p>
                 {/* Persistent warnings for AI Usage */}
                 {aiStatus === "near_limit" && (
                   <p className="tw:text-xs tw:text-amber-700 tw:font-medium tw:mt-2">
@@ -264,90 +280,139 @@ export function SubscriptionPage({
 
         {/* Pricing Cards */}
         <section id="plans" tabIndex={-1} className="tw:mb-16 tw:scroll-mt-20 tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400 focus-visible:tw:rounded-2xl">
-          <div className="tw:flex tw:justify-center tw:mb-8">
-            <BillingCycleToggle value={billingCycle} onChange={setBillingCycle} />
+          <div className="tw:text-center tw:mb-8">
+            <h2 className="tw:text-2xl tw:font-bold tw:text-slate-900">Pilih paket untuk melihat detail</h2>
+            <p className="tw:text-sm tw:text-slate-600 tw:mt-2">Pilihan ini hanya mengubah preview. Paket aktif Anda tetap {currentTier.label}.</p>
           </div>
 
-          <div className="subscription-pricing-cards-grid tw:flex tw:flex-col md:tw:flex-row tw:items-stretch tw:gap-6 lg:tw:gap-8">
-            {/* Free Core */}
-            <div className="tw:flex-1 tw:w-full tw:bg-white tw:rounded-2xl tw:border tw:border-slate-200 tw:p-8 tw:shadow-sm tw:flex tw:flex-col">
-              {currentPlan.plan === "free" && (
-                <div className="tw:inline-block tw:bg-slate-100 tw:text-slate-700 tw:px-3 tw:py-1 tw:rounded-md tw:text-xs tw:font-bold tw:uppercase tw:tracking-wider tw:mb-4 tw:self-start">
-                  Paket Anda
-                </div>
-              )}
-              <h3 className="tw:text-2xl tw:font-bold tw:text-slate-900">{tierMatrix.free.label}</h3>
-              <p className="tw:text-sm tw:md:text-base tw:text-slate-600 tw:mt-1.5 tw:mb-5 tw:min-h-[48px]">{tierMatrix.free.tagline}</p>
-              
-              <div className="tw:mb-6 tw:pb-6 tw:border-b tw:border-slate-100">
-                <span className="tw:text-4xl tw:font-extrabold tw:text-slate-900">Rp0</span>
-                <span className="tw:text-base tw:text-slate-500 tw:font-medium"> / bulan</span>
-                <p className="tw:text-xs tw:text-slate-500 tw:mt-1">{tierMatrix.free.pricing.label}</p>
-              </div>
-              
-              <ul className="tw:space-y-3.5 tw:mb-8 tw:flex-grow">
-                {tierMatrix.free.features.map(f => (
-                  <li key={f} className="tw:flex tw:items-start tw:gap-3 tw:text-sm tw:md:text-base tw:text-slate-700">
-                    <Check className="tw:w-5 tw:h-5 tw:text-indigo-600 tw:shrink-0 tw:mt-0.5" weight="bold" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-                {tierMatrix.free.limitations.map(l => (
-                  <li key={l} className="tw:flex tw:items-start tw:gap-3 tw:text-sm tw:md:text-base tw:text-slate-400">
-                    <X className="tw:w-5 tw:h-5 tw:text-slate-300 tw:shrink-0 tw:mt-0.5" weight="bold" />
-                    <span>{l}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="subscription-pricing-cards-grid tw:grid tw:grid-cols-1 md:tw:grid-cols-2 xl:tw:grid-cols-3 tw:items-stretch tw:gap-6 lg:tw:gap-8">
+            {(["free", "pro", "organization"] as const).map((planId) => {
+              const tier = tierMatrix[planId];
+              const active = currentPlan.plan === planId;
+              const selected = selectedPlan === planId;
+              return (
+                <button
+                  key={planId}
+                  type="button"
+                  onClick={() => handlePlanPreview(planId)}
+                  onKeyDown={(event) => handlePlanPreviewKeyDown(event, planId)}
+                  aria-pressed={selected}
+                  className={`tw:min-w-[280px] tw:w-full tw:rounded-2xl tw:border tw:p-7 tw:shadow-sm tw:flex tw:flex-col tw:text-left tw:transition-colors tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-indigo-500 ${
+                    selected
+                      ? "tw:bg-indigo-50/40 tw:border-indigo-600 tw:ring-2 tw:ring-indigo-100"
+                      : "tw:bg-white tw:border-slate-200 hover:tw:border-indigo-300"
+                  }`}
+                >
+                  <div className="tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:mb-4">
+                    {active ? <span className="tw:bg-slate-900 tw:text-white tw:px-3 tw:py-1 tw:rounded-full tw:text-xs tw:font-bold tw:uppercase">Paket aktif</span> : null}
+                    {planId === "pro" ? <span className="tw:bg-indigo-100 tw:text-indigo-700 tw:px-3 tw:py-1 tw:rounded-full tw:text-xs tw:font-bold tw:uppercase">Direkomendasikan</span> : null}
+                    {selected && !active ? <span className="tw:bg-white tw:text-indigo-700 tw:border tw:border-indigo-200 tw:px-3 tw:py-1 tw:rounded-full tw:text-xs tw:font-bold tw:uppercase">Preview terpilih</span> : null}
+                  </div>
+                  <h3 className="tw:text-2xl tw:font-bold tw:text-slate-900 tw:leading-tight">{tier.label}</h3>
+                  <p className="tw:text-sm tw:text-slate-600 tw:mt-3 tw:mb-5 tw:min-h-[42px]">{tier.audience}</p>
+                  <div className="tw:mb-6 tw:pb-5 tw:border-b tw:border-slate-100">
+                    <strong className="tw:block tw:text-2xl tw:leading-tight tw:text-slate-900">{tier.pricing.display}</strong>
+                    <span className="tw:inline-flex tw:mt-2 tw:px-2.5 tw:py-1 tw:rounded-full tw:bg-amber-50 tw:text-amber-800 tw:text-xs tw:font-semibold">{tier.pricing.label}</span>
+                  </div>
+                  <ul className="tw:space-y-3 tw:mb-7 tw:flex-grow">
+                    {tier.features.slice(0, 4).map((feature) => (
+                      <li key={feature} className="tw:flex tw:items-start tw:gap-2.5 tw:text-sm tw:text-slate-700">
+                        <Check className="tw:w-5 tw:h-5 tw:text-indigo-600 tw:shrink-0" weight="bold" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <span className={`tw:w-full tw:min-h-[46px] tw:px-5 tw:rounded-xl tw:inline-flex tw:items-center tw:justify-center tw:text-sm tw:font-semibold ${
+                    selected ? "tw:bg-indigo-600 tw:text-white" : "tw:bg-white tw:text-slate-900 tw:border tw:border-slate-300"
+                  }`}>
+                    {selected ? `Sedang melihat ${tier.label}` : `Lihat detail ${tier.label}`}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-            {/* Pro Individual */}
-            <div className={`subscription-pro-card tw:flex-1 tw:w-full tw:rounded-2xl tw:border-2 tw:p-8 tw:shadow-md tw:flex tw:flex-col tw:relative ${currentPlan.plan === "pro" ? "tw:bg-slate-50/70 tw:border-slate-900" : "tw:bg-white tw:border-indigo-600"}`}>
-              {currentPlan.plan === "pro" ? (
-                <div className="tw:absolute tw:-top-3.5 tw:left-8 tw:bg-slate-900 tw:text-white tw:px-3.5 tw:py-1 tw:rounded-md tw:text-xs tw:font-bold tw:uppercase tw:tracking-wider">
-                  Paket Anda
+          <button
+            type="button"
+            onClick={() => handlePlanPreview("enterprise")}
+            onKeyDown={(event) => handlePlanPreviewKeyDown(event, "enterprise")}
+            aria-pressed={selectedPlan === "enterprise"}
+            className={`tw:w-full tw:mt-8 tw:rounded-2xl tw:border tw:p-7 md:tw:p-8 tw:text-left tw:grid md:tw:grid-cols-[1.3fr_1fr_auto] tw:gap-6 tw:items-center tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-indigo-500 ${
+              selectedPlan === "enterprise" ? "tw:bg-slate-900 tw:text-white tw:border-slate-900 tw:ring-2 tw:ring-slate-300" : "tw:bg-slate-50 tw:border-slate-200 hover:tw:border-slate-400"
+            }`}
+          >
+            <div>
+              <span className="tw:text-xs tw:font-bold tw:uppercase tw:tracking-wider tw:text-indigo-500">Institutional roadmap</span>
+              <h3 className={`tw:text-2xl tw:font-bold tw:mt-2 ${selectedPlan === "enterprise" ? "tw:text-white" : "tw:text-slate-900"}`}>Enterprise / Custom</h3>
+              <p className={`tw:text-sm tw:mt-2 ${selectedPlan === "enterprise" ? "tw:text-slate-300" : "tw:text-slate-600"}`}>{tierMatrix.enterprise.audience}</p>
+            </div>
+            <div>
+              <strong className={`tw:block tw:text-xl tw:leading-snug ${selectedPlan === "enterprise" ? "tw:text-white" : "tw:text-slate-900"}`}>{tierMatrix.enterprise.pricing.display}</strong>
+              <span className="tw:inline-flex tw:mt-2 tw:px-2.5 tw:py-1 tw:rounded-full tw:bg-amber-50 tw:text-amber-800 tw:text-xs tw:font-semibold">{tierMatrix.enterprise.pricing.label}</span>
+              <p className={`tw:text-sm tw:mt-3 ${selectedPlan === "enterprise" ? "tw:text-slate-300" : "tw:text-slate-600"}`}>SSO dan API · integration · custom policy · full audit · private ecosystem · SLA</p>
+            </div>
+            <span className={`tw:min-h-[46px] tw:px-5 tw:rounded-xl tw:inline-flex tw:items-center tw:justify-center tw:text-sm tw:font-semibold tw:whitespace-nowrap ${
+              selectedPlan === "enterprise" ? "tw:bg-white tw:text-slate-900" : "tw:bg-slate-900 tw:text-white"
+            }`}>
+              {selectedPlan === "enterprise" ? "Sedang melihat Enterprise" : "Lihat preview Enterprise"}
+            </span>
+          </button>
+
+          <section
+            id="selected-plan-detail"
+            tabIndex={-1}
+            aria-labelledby="selected-plan-title"
+            className="tw:mt-8 tw:bg-white tw:border tw:border-slate-200 tw:rounded-2xl tw:p-7 md:tw:p-9 tw:shadow-sm tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-indigo-500"
+          >
+            <div className="tw:grid lg:tw:grid-cols-[1fr_1.1fr] tw:gap-8">
+              <div>
+                <p className="tw:text-xs tw:font-bold tw:text-indigo-600 tw:uppercase tw:tracking-wider">Detail preview paket</p>
+                <h3 id="selected-plan-title" className="tw:text-3xl tw:font-extrabold tw:text-slate-900 tw:mt-2">{selectedTier.label}</h3>
+                <p className="tw:text-base tw:text-slate-600 tw:mt-3 tw:leading-relaxed">{selectedTier.audience}</p>
+                <p className="tw:text-base tw:text-slate-700 tw:mt-4 tw:font-medium">{selectedTier.tagline}</p>
+                <strong className="tw:block tw:text-2xl tw:text-slate-900 tw:mt-6">{selectedTier.pricing.display}</strong>
+                <span className="tw:inline-flex tw:mt-2 tw:px-2.5 tw:py-1 tw:rounded-full tw:bg-amber-50 tw:text-amber-800 tw:text-xs tw:font-semibold">{selectedTier.pricing.label}</span>
+                <div className="tw:mt-6 tw:p-4 tw:rounded-xl tw:bg-slate-50 tw:border tw:border-slate-200">
+                  <strong className="tw:text-sm tw:text-slate-900">Dibandingkan paket aktif</strong>
+                  <p className="tw:text-sm tw:text-slate-600 tw:mt-1">
+                    Paket aktif tetap {currentTier.label}. Preview {selectedTier.label} tidak mengubah entitlement atau memproses pembayaran.
+                  </p>
                 </div>
-              ) : (
-                <div className="tw:absolute tw:-top-3.5 tw:right-8 tw:bg-indigo-600 tw:text-white tw:px-3.5 tw:py-1 tw:rounded-md tw:text-xs tw:font-bold tw:uppercase tw:tracking-wider">
-                  Direkomendasikan
-                </div>
-              )}
-              <h3 className="tw:text-2xl tw:font-bold tw:text-slate-900">{tierMatrix.pro.label}</h3>
-              <p className="tw:text-sm tw:md:text-base tw:text-slate-600 tw:mt-1.5 tw:mb-5 tw:min-h-[48px]">{tierMatrix.pro.tagline}</p>
-              
-              <div className="tw:mb-6 tw:pb-6 tw:border-b tw:border-slate-100">
-                <span className="tw:text-4xl tw:font-extrabold tw:text-slate-900">
-                  Rp{billingCycle === "yearly" ? "990.000" : "99.000"}
-                </span>
-                <span className="tw:text-base tw:text-slate-500 tw:font-medium"> /{billingCycle === "yearly" ? "tahun" : "bulan"}</span>
-                <p className="tw:text-xs tw:text-emerald-600 tw:font-bold tw:mt-1 tw:min-h-[16px]">
-                  {billingCycle === "yearly" ? "Hemat 2 bulan" : ""}
-                </p>
               </div>
-              
-              <ul className="tw:space-y-3.5 tw:mb-8 tw:flex-grow">
-                {tierMatrix.pro.features.map(f => (
-                  <li key={f} className="tw:flex tw:items-start tw:gap-3 tw:text-sm tw:md:text-base tw:text-slate-800">
-                    <Check className="tw:w-5 tw:h-5 tw:text-indigo-600 tw:shrink-0 tw:mt-0.5" weight="bold" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              
-              {currentPlan.plan === "free" && (
-                <UpgradeDialog 
-                  trigger={
-                    <button className="tw:w-full tw:bg-slate-900 tw:text-white tw:border tw:border-slate-900 tw:text-base tw:font-semibold tw:min-h-[48px] tw:px-6 tw:rounded-xl tw:inline-flex tw:items-center tw:justify-center hover:tw:bg-slate-800 tw:transition-colors tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400">
-                      Upgrade ke Pro
+              <div>
+                <h4 className="tw:text-lg tw:font-bold tw:text-slate-900">Capability lengkap</h4>
+                <ul className="tw:grid sm:tw:grid-cols-2 tw:gap-3 tw:mt-4">
+                  {selectedTier.capabilities.map((capability) => (
+                    <li key={capability} className="tw:flex tw:items-start tw:gap-2.5 tw:text-sm tw:text-slate-700">
+                      <Check className="tw:w-5 tw:h-5 tw:text-indigo-600 tw:shrink-0" weight="bold" />
+                      <span>{capability}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="tw:mt-6 tw:border-t tw:border-slate-200 tw:pt-5">
+                  <strong className="tw:text-sm tw:text-slate-900">Batasan</strong>
+                  <ul className="tw:mt-2 tw:space-y-2 tw:text-sm tw:text-slate-600">
+                    {(selectedTier.limitations.length ? selectedTier.limitations : ["Pilihan ini merupakan simulasi prototype dan tidak memproses transaksi."]).map((limitation) => <li key={limitation}>{limitation}</li>)}
+                  </ul>
+                </div>
+                <div className="tw:flex tw:flex-col sm:tw:flex-row tw:gap-3 tw:mt-7">
+                  <button
+                    type="button"
+                    className="button primary tw:justify-center"
+                    onClick={() => setSelectionMessage(`Pilihan ${selectedTier.label} disimpan sebagai simulasi preview. Paket aktif tetap ${currentTier.label}.`)}
+                  >
+                    {selectedPlan === "organization" ? "Simulasikan pilihan Organization" : `Simulasikan pilihan ${selectedTier.label}`}
+                  </button>
+                  {selectedPlan !== "pro" ? (
+                    <button type="button" className="button secondary tw:justify-center" onClick={() => handlePlanPreview("pro")}>
+                      Bandingkan dengan Pro
                     </button>
-                  }
-                  onConfirm={handleUpgradeToPro}
-                  monthlyPrice={`Rp${billingCycle === "yearly" ? "990.000/tahun" : "99.000/bulan"}`}
-                />
-              )}
+                  ) : null}
+                </div>
+                {selectionMessage ? <p className="tw:mt-4 tw:text-sm tw:font-medium tw:text-emerald-700" role="status">{selectionMessage}</p> : null}
+              </div>
             </div>
-
-          </div>
+          </section>
         </section>
 
         {/* AI Capabilities Preview */}
@@ -482,31 +547,6 @@ export function SubscriptionPage({
           </div>
           )}
         </section>
-
-        {/* Organization Teaser */}
-        <FadeContent duration={460} translateY={16} blur={false} threshold={0.15}>
-        <section className="subscription-organization-card tw:bg-slate-50 tw:border tw:border-slate-200 tw:rounded-2xl tw:p-8 md:tw:p-10 tw:mb-16">
-          <div className="tw:flex tw:flex-col md:tw:flex-row tw:items-center tw:justify-between tw:gap-6">
-            <div className="tw:flex-1 tw:text-center md:tw:text-left">
-              <div className="tw:inline-flex tw:items-center tw:justify-center tw:w-11 tw:h-11 tw:rounded-xl tw:bg-indigo-100 tw:text-indigo-700 tw:mb-4">
-                <Buildings className="tw:w-6 tw:h-6" weight="fill" />
-              </div>
-              <h2 className="tw:text-2xl tw:font-bold tw:text-slate-900 tw:mb-2">Paket untuk Tim dan Institusi</h2>
-              <p className="tw:text-base tw:text-slate-600 tw:max-w-xl tw:leading-relaxed">
-                Tersedia paket <strong>Organization</strong> dan <strong>Enterprise</strong> dengan fitur seat management, shared shortlists, kendali akses penuh (RBAC), serta organization AI context.
-              </p>
-            </div>
-            <div className="tw:w-full md:tw:w-auto tw:shrink-0">
-              <a 
-                href="/organization/nusantara/billing" 
-                className="tw:w-full tw:bg-white tw:border tw:border-slate-300 tw:text-slate-900 tw:text-sm tw:font-semibold tw:min-h-[48px] tw:px-6 tw:rounded-xl tw:inline-flex tw:items-center tw:justify-center hover:tw:bg-slate-100 tw:transition-colors tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400"
-              >
-                Lihat paket organisasi
-              </a>
-            </div>
-          </div>
-        </section>
-        </FadeContent>
 
         {/* FAQ (Centered 920px container with Dropdown Accordion) */}
         <section className="tw:mb-0 tw:max-w-[920px] tw:mx-auto">

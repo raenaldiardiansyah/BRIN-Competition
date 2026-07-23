@@ -48,6 +48,7 @@ import { dummyEvidence } from "../../dummy/registry/evidence";
 import { dummyMatches } from "../../dummy/registry/matches";
 import { dummyOrganizations } from "../../dummy/registry/organizations";
 import { ProductOrganizationPlans } from "../subscription/product-organization-plans";
+import { tierMatrix } from "@/data/subscription-tiers";
 import { ProductOrganizationBilling } from "./product-org-billing";
 import { FooterRevealLayout } from "../layout/footer-reveal-layout";
 import { SiteFooter } from "../layout/footer";
@@ -114,7 +115,7 @@ function Link({ href, children, ...props }: NativeLinkProps) {
 }
 
 const defaultDemo: DemoState = {
-  persona: "guest",
+  persona: "returning",
   firstValueAchieved: false,
   saved: false,
   invitationSent: false,
@@ -122,7 +123,7 @@ const defaultDemo: DemoState = {
   contributionConfirmed: false,
   recommendationHidden: false,
   notificationDone: false,
-  plan: "Free Core",
+  plan: "Pro Individual",
   controlsCollapsed: true,
   previewWidth: "fluid",
 };
@@ -843,12 +844,7 @@ function PublicProfilePage({
 }
 
 function PricingPage() {
-  const plans = [
-    ["Free Core", "Satu journey inti tetap berguna", ["Profil & proyek dasar", "Contribution + evidence", "Alasan matching dasar", "Kolaborasi dalam batas wajar"]],
-    ["Pro Individual", "Kedalaman dan kapasitas", ["Matching lebih rinci", "Saved search & alerts", "Analytics personal", "AI assistance lebih luas"]],
-    ["Organization", "Kontrol dan kolaborasi tim", ["Seat & permission", "Shared shortlist", "Pipeline & approval", "Reporting organisasi"]],
-    ["Enterprise / Custom", "Roadmap untuk kebutuhan khusus", ["SSO & API", "Custom policy", "Full audit", "SLA & integration"]],
-  ] as const;
+  const plans = Object.values(tierMatrix);
   return (
     <>
       <PageHeader
@@ -857,16 +853,18 @@ function PricingPage() {
         description="Harga, kuota, dan trial numerik belum diputuskan pada Beta 1."
       />
       <div className="pricing-grid">
-        {plans.map(([name, description, features], index) => (
-          <article className={`price-card ${index === 0 ? "selected" : ""}`} key={name}>
+        {plans.map((plan, index) => (
+          <article className={`price-card ${index === 0 ? "selected" : ""}`} key={plan.id}>
             <Badge tone={index === 0 ? "success" : "neutral"}>
               {index === 0 ? "Core tetap berguna" : index === 3 ? "Roadmap" : "Premium"}
             </Badge>
-            <h2>{name}</h2>
-            <p>{description}</p>
-            <ul>{features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
-            <ActionLink href={index === 0 ? "/register" : `/login?returnTo=/subscription&plan=${encodeURIComponent(name)}`} variant={index === 1 ? "primary" : "secondary"}>
-              {index === 0 ? "Mulai gratis" : index === 3 ? "Diskusikan kebutuhan" : "Lihat paket"}
+            <h2>{plan.label}</h2>
+            <p>{plan.tagline}</p>
+            <p><small>{plan.audience}</small></p>
+            <p><strong>{plan.pricing.display}</strong><br /><small>{plan.pricing.label}</small></p>
+            <ul>{plan.features.map((feature) => <li key={feature}>{feature}</li>)}</ul>
+            <ActionLink href={plan.ctaRoute} variant={index === 1 ? "primary" : "secondary"}>
+              {plan.ctaLabel}
             </ActionLink>
           </article>
         ))}
@@ -2130,7 +2128,13 @@ export function PrototypeApp() {
     const stored = sessionStorage.getItem("projectlink-demo");
     if (stored) {
       try {
-        setDemo({ ...defaultDemo, ...JSON.parse(stored) });
+        const storedDemo = JSON.parse(stored) as Partial<DemoState>;
+        const hasLegacyFreeDefault = storedDemo.persona === "guest" && storedDemo.plan === "Free Core";
+        setDemo({
+          ...defaultDemo,
+          ...storedDemo,
+          ...(hasLegacyFreeDefault ? { persona: defaultDemo.persona, plan: defaultDemo.plan } : {}),
+        });
       } catch {
         setDemo(defaultDemo);
       }

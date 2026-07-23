@@ -8,8 +8,8 @@ import type { AIFeature } from "../types";
 const featureCta: Record<AIFeature["id"], string> = {
   "collaboration-matching": "Mulai pencocokan", "innovation-profile": "Analisis profil",
   "innovation-workspace": "Buka workspace", "research-gap": "Temukan gap riset",
-  "novelty-checker": "Cek indikasi kebaruan", "industry-matching": "Cari mitra industri",
-  "funding-recommendation": "Temukan pendanaan", commercialization: "Susun jalur komersialisasi",
+  "novelty-checker": "Cek indikasi kebaruan", "industry-matching": "Lihat preview Organization",
+  "funding-recommendation": "Lihat preview Organization", commercialization: "Lihat preview Organization",
 };
 
 export function AIFeatureCard({
@@ -31,7 +31,7 @@ export function AIFeatureCard({
         <p>{feature.description}</p>
         <small>{organizationOnly ? "Preview tersedia · akses penuh memerlukan workspace Organization" : "Termasuk dalam Pro Individual"}</small>
       </button>
-      <Link href={feature.route}>{organizationOnly ? "Cari mitra industri" : featureCta[feature.id]}</Link>
+      <Link href={feature.route}>{organizationOnly ? "Lihat preview Organization" : featureCta[feature.id]}</Link>
     </article>
   );
 

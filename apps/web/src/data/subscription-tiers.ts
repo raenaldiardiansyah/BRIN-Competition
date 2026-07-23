@@ -4,13 +4,16 @@ export interface TierDefinition {
   id: SubscriptionPlan;
   label: string;
   tagline: string;
+  audience: string;
   iconKey: 'rocket' | 'sparkle' | 'buildings' | 'shield';
   features: string[];
+  capabilities: string[];
   limitations: string[];
   pricing: {
     monthly: number | null;    // null = "Hubungi kami"
     yearly: number | null;
-    label: string;             // "Prototype pricing"
+    display: string;
+    label: string;
   };
   ctaLabel: string;
   ctaRoute: string;
@@ -30,14 +33,17 @@ export const tierMatrix: Record<Exclude<SubscriptionPlan, "none">, TierDefinitio
   free: {
     id: "free",
     label: "Free Core",
-    tagline: "Satu journey inti tetap berguna",
+    tagline: "Bangun project portfolio dan mulai kolaborasi.",
+    audience: "Individu yang mulai membangun profil, proyek, contribution, dan evidence.",
     iconKey: "rocket",
     features: ["Profil & proyek dasar", "Contribution + evidence", "Alasan matching dasar", "Kolaborasi dalam batas wajar"],
+    capabilities: ["Profil dan proyek dasar", "Contribution dan evidence", "Matching dasar", "Kolaborasi terbatas"],
     limitations: ["Analytics dibatasi", "Saved search tidak tersedia"],
     pricing: {
       monthly: 0,
       yearly: 0,
-      label: "Prototype pricing"
+      display: "Rp0",
+      label: "Simulasi harga prototype"
     },
     ctaLabel: "Mulai sekarang",
     ctaRoute: "/register"
@@ -45,14 +51,17 @@ export const tierMatrix: Record<Exclude<SubscriptionPlan, "none">, TierDefinitio
   pro: {
     id: "pro",
     label: "Pro Individual",
-    tagline: "Kedalaman dan kapasitas",
+    tagline: "Tingkatkan kapasitas, insight, AI assistance, dan matching personal.",
+    audience: "Profesional, peneliti, dan inovator individual.",
     iconKey: "sparkle",
     features: ["Matching lebih rinci", "Saved search & alerts", "Analytics personal", "AI assistance lebih luas"],
-    limitations: [],
+    capabilities: ["Matching lebih dalam", "AI assistance", "Personal analytics", "Saved workflow", "Research Gap", "Novelty Checker", "Riwayat analisis Pro"],
+    limitations: ["Tidak mencakup shared workspace dan workflow tim Organization."],
     pricing: {
-      monthly: 99000,
-      yearly: 990000,
-      label: "Prototype pricing"
+      monthly: 49000,
+      yearly: null,
+      display: "Rp49.000–Rp99.000/bulan",
+      label: "Simulasi harga prototype"
     },
     ctaLabel: "Kelola langganan",
     ctaRoute: "/subscription"
@@ -60,32 +69,38 @@ export const tierMatrix: Record<Exclude<SubscriptionPlan, "none">, TierDefinitio
   organization: {
     id: "organization",
     label: "Organization",
-    tagline: "Kontrol dan kolaborasi tim",
+    tagline: "Kelola matching, shortlist, pipeline, dan kolaborasi bersama tim.",
+    audience: "Startup, tim inovasi, laboratorium, inkubator, organisasi kecil, dan tim riset.",
     iconKey: "buildings",
     features: ["Seat & permission", "Shared shortlist", "Pipeline & approval", "Reporting organisasi"],
-    limitations: [],
+    capabilities: ["Seat dan permission", "Shared shortlist", "Shared pipeline", "Approval workflow", "Team analytics", "Reporting", "Industry Matching", "Funding Recommendation", "Commercialization Assistant"],
+    limitations: ["Preview tidak mengaktifkan workspace, entitlement, atau transaksi Organization."],
     pricing: {
-      monthly: 499000,
-      yearly: 4990000,
-      label: "Prototype pricing"
+      monthly: 99000,
+      yearly: null,
+      display: "Rp99.000–Rp299.000/bulan",
+      label: "Simulasi harga prototype"
     },
-    ctaLabel: "Kelola billing",
-    ctaRoute: "/organization/nusantara/billing"
+    ctaLabel: "Lihat preview Organization",
+    ctaRoute: "/subscription?plan=organization"
   },
   enterprise: {
     id: "enterprise",
     label: "Enterprise / Custom",
-    tagline: "Roadmap untuk kebutuhan khusus",
+    tagline: "Integrasikan workflow, security, analytics, dan private ecosystem.",
+    audience: "Perusahaan besar, universitas, pemerintah, lembaga riset, dan consortium.",
     iconKey: "shield",
     features: ["SSO & API", "Custom policy", "Full audit", "SLA & integration"],
-    limitations: [],
+    capabilities: ["SSO dan API", "Integration", "Custom policy", "Full audit", "Private ecosystem", "SLA"],
+    limitations: ["Bukan paket checkout self-service; konfigurasi final memerlukan pembahasan kebutuhan institusi."],
     pricing: {
       monthly: null,
       yearly: null,
-      label: "Prototype pricing"
+      display: "Rp1.000.000–Rp5.000.000/bulan atau custom",
+      label: "Simulasi harga prototype"
     },
-    ctaLabel: "Lihat paket organisasi",
-    ctaRoute: "/plans/organization"
+    ctaLabel: "Lihat preview Enterprise",
+    ctaRoute: "/subscription?plan=enterprise"
   }
 };
 
@@ -117,7 +132,7 @@ export const AI_FEATURE_MATRIX: Record<AIFeatureId, { name: string; description:
   "portfolio-insight": {
     name: "Portfolio Insight",
     description: "Wawasan mendalam terhadap kekuatan portofolio organisasi atau individu.",
-    access: { free: "locked", pro: "locked", organization: "available", enterprise: "available" },
+    access: { free: "limited", pro: "available", organization: "available", enterprise: "available" },
     quotaCost: 5,
   },
   "organization-comparison": {

@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCircle, Buildings, Sparkle, ArrowRight, ShieldCheck } from "@phosphor-icons/react";
+import { CheckCircle, Buildings, ShieldCheck } from "@phosphor-icons/react";
+import { tierMatrix } from "@/data/subscription-tiers";
 import "../../styles/product-organization-plans.css";
 
 export function ProductOrganizationPlans() {
@@ -22,7 +23,7 @@ export function ProductOrganizationPlans() {
           {/* Organization Plan */}
           <div className="tw:bg-white tw:rounded-2xl tw:shadow-sm tw:border tw:border-slate-200 tw:p-8 tw:relative">
             <div className="tw:absolute tw:top-0 tw:left-1/2 -tw:-translate-x-1/2 -tw:translate-y-1/2 tw:bg-blue-600 tw:text-white tw:text-xs tw:font-bold tw:uppercase tw:tracking-wider tw:py-1 tw:px-3 tw:rounded-full">
-              Paling Populer
+              Simulasi harga prototype
             </div>
             <div className="tw:flex tw:items-center tw:gap-3 tw:mb-4">
               <div className="tw:p-2 tw:bg-blue-50 tw:text-blue-600 tw:rounded-lg">
@@ -31,14 +32,13 @@ export function ProductOrganizationPlans() {
               <h2 className="tw:text-2xl tw:font-bold tw:text-slate-900">Organization</h2>
             </div>
             <div className="tw:mb-6">
-              <span className="tw:text-4xl tw:font-extrabold tw:text-slate-900">Rp 890.000</span>
-              <span className="tw:text-slate-500"> / bulan</span>
+              <span className="tw:text-3xl tw:font-extrabold tw:text-slate-900">{tierMatrix.organization.pricing.display}</span>
             </div>
             <p className="tw:text-slate-600 tw:mb-8 tw:text-sm">
-              Untuk tim riset dan startup yang membutuhkan kolaborasi terpusat. Termasuk 15 anggota.
+              {tierMatrix.organization.audience}
             </p>
             <a 
-              href="/register"
+              href="/subscription?plan=organization"
               className="tw:block tw:w-full tw:text-center tw:bg-blue-600 hover:tw:bg-blue-700 tw:text-white tw:font-semibold tw:py-3 tw:rounded-xl tw:transition-colors tw:mb-8"
             >
               Mulai dengan Organization
@@ -49,11 +49,11 @@ export function ProductOrganizationPlans() {
               <ul className="tw:space-y-3 tw:text-sm tw:text-slate-700">
                 <li className="tw:flex tw:items-start tw:gap-3">
                   <CheckCircle size={20} className="tw:text-emerald-500 tw:shrink-0" weight="fill" />
-                  <span>Hingga 15 anggota aktif</span>
+                  <span>Seat dan permission untuk workspace tim</span>
                 </li>
                 <li className="tw:flex tw:items-start tw:gap-3">
                   <CheckCircle size={20} className="tw:text-emerald-500 tw:shrink-0" weight="fill" />
-                  <span>500 penggunaan AI secara gabungan per bulan</span>
+                  <span>Penggunaan AI bersama sesuai kebijakan prototype</span>
                 </li>
                 <li className="tw:flex tw:items-start tw:gap-3">
                   <CheckCircle size={20} className="tw:text-emerald-500 tw:shrink-0" weight="fill" />
@@ -80,18 +80,17 @@ export function ProductOrganizationPlans() {
               <h2 className="tw:text-2xl tw:font-bold tw:text-white">Enterprise</h2>
             </div>
             <div className="tw:mb-6">
-              <span className="tw:text-4xl tw:font-extrabold tw:text-white">Custom</span>
+              <span className="tw:text-2xl tw:font-extrabold tw:text-white">{tierMatrix.enterprise.pricing.display}</span>
             </div>
             <p className="tw:text-slate-400 tw:mb-8 tw:text-sm">
-              Untuk institusi besar, universitas, atau korporasi dengan kebutuhan tak terbatas dan dukungan khusus.
+              {tierMatrix.enterprise.audience}
             </p>
-            <button 
-              className="tw:flex tw:items-center tw:justify-center tw:w-full tw:px-6 tw:py-3 tw:text-sm tw:font-semibold tw:text-slate-400 tw:bg-slate-50 tw:border-2 tw:border-slate-200 tw:rounded-xl tw:cursor-not-allowed"
-              aria-disabled="true"
-              disabled
+            <a
+              href="/subscription?plan=enterprise"
+              className="tw:flex tw:items-center tw:justify-center tw:w-full tw:px-6 tw:py-3 tw:text-sm tw:font-semibold tw:text-slate-900 tw:bg-slate-50 tw:border-2 tw:border-slate-200 tw:rounded-xl"
             >
-              Hubungi Tim Sales
-            </button>
+              Lihat preview Enterprise
+            </a>
             <p className="tw:text-xs tw:text-slate-500 tw:text-center tw:mt-2">
               Kontak Enterprise akan tersedia pada integrasi berikutnya
             </p>
@@ -101,11 +100,11 @@ export function ProductOrganizationPlans() {
               <ul className="tw:space-y-3 tw:text-sm tw:text-slate-300">
                 <li className="tw:flex tw:items-start tw:gap-3">
                   <CheckCircle size={20} className="tw:text-blue-400 tw:shrink-0" weight="fill" />
-                  <span>Anggota tak terbatas (Custom seats)</span>
+                  <span>Konfigurasi seat sesuai kebutuhan</span>
                 </li>
                 <li className="tw:flex tw:items-start tw:gap-3">
                   <CheckCircle size={20} className="tw:text-blue-400 tw:shrink-0" weight="fill" />
-                  <span>Penggunaan AI tak terbatas</span>
+                  <span>Kebijakan penggunaan AI kustom</span>
                 </li>
               </ul>
             </div>
@@ -118,15 +117,15 @@ export function ProductOrganizationPlans() {
           <div className="tw:space-y-6">
             <div>
               <h4 className="tw:font-bold tw:text-slate-900 tw:mb-2">Bagaimana cara kerja batas kursi (seats)?</h4>
-              <p className="tw:text-slate-600 tw:text-sm">Paket Organization menyertakan 15 kursi. Setiap pengguna yang Anda undang ke workspace organisasi Anda akan menempati satu kursi, terlepas dari perannya (Admin atau Member).</p>
+              <p className="tw:text-slate-600 tw:text-sm">Setiap pengguna yang diundang menempati satu seat sesuai peran dan permission workspace. Jumlah seat final belum ditetapkan pada prototype.</p>
             </div>
             <div>
               <h4 className="tw:font-bold tw:text-slate-900 tw:mb-2">Apakah kuota AI dibagi antar anggota?</h4>
-              <p className="tw:text-slate-600 tw:text-sm">Ya, kuota 500 penggunaan AI pada paket Organization adalah *pool* gabungan yang dapat digunakan oleh semua anggota di dalam workspace organisasi tersebut.</p>
+              <p className="tw:text-slate-600 tw:text-sm">Preview memperlihatkan penggunaan bersama, tetapi batas final dan kebijakan pool belum ditetapkan pada prototype.</p>
             </div>
             <div>
-              <h4 className="tw:font-bold tw:text-slate-900 tw:mb-2">Bisakah saya menambah kursi melebihi 15?</h4>
-              <p className="tw:text-slate-600 tw:text-sm">Jika organisasi Anda berkembang pesat, Anda dapat beralih ke paket Enterprise untuk kursi tak terbatas dan kuota kustom.</p>
+              <h4 className="tw:font-bold tw:text-slate-900 tw:mb-2">Bisakah saya menambah seat?</h4>
+              <p className="tw:text-slate-600 tw:text-sm">Enterprise menampilkan preview konfigurasi seat dan kebijakan kustom; tidak ada transaksi atau aktivasi nyata pada prototype.</p>
             </div>
           </div>
         </div>
