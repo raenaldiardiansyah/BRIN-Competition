@@ -417,6 +417,38 @@
   margin-top: 22px;
 }
 
+.tautin-search-detail-primary-action {
+  background-color: #075ff7 !important;
+  color: #ffffff !important;
+  border-color: #075ff7 !important;
+  box-shadow: 0 4px 14px rgba(7, 95, 247, 0.25) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  text-decoration: none !important;
+  font-weight: 750 !important;
+  cursor: pointer !important;
+}
+
+.tautin-search-detail-primary-action:hover {
+  background-color: #004cd6 !important;
+  border-color: #004cd6 !important;
+  color: #ffffff !important;
+}
+
+.tautin-search-detail-primary-action:focus-visible {
+  outline: 3px solid rgba(7, 95, 247, 0.45) !important;
+  outline-offset: 2px !important;
+}
+
+.tautin-search-detail-primary-action span,
+.tautin-search-detail-primary-action svg,
+.tautin-search-detail-primary-action label {
+  color: currentColor !important;
+  fill: currentColor !important;
+}
+
 .px-search-state {
   display: grid;
   min-height: 420px;

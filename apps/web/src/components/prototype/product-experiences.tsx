@@ -132,9 +132,40 @@ function SearchResultCard({
   );
 }
 
-function SearchDetail({ item }: { item: SearchItem }) {
+function SearchDetail({ item, onClose }: { item: SearchItem; onClose?: () => void }) {
   const [saved, setSaved] = usePrototypeSession<string[]>("projectlink-saved-items", []);
   const isSaved = saved.includes(item.id);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      const next = new URLSearchParams(searchParams.toString());
+      next.delete("selected");
+      const query = next.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+    }
+  };
+
+  const getPrimaryAction = () => {
+    switch (item.scope) {
+      case "people":
+        return { label: "Lihat profil", href: item.href || `/profiles/${item.slug}` };
+      case "organizations":
+        return { label: "Lihat organisasi", href: item.href || `/organizations/${item.slug}` };
+      case "opportunities":
+        return { label: "Lihat peluang", href: item.href || `/opportunities/${item.slug}` };
+      case "projects":
+      default:
+        return { label: "Buka proyek", href: item.href || `/projects/${item.slug}` };
+    }
+  };
+
+  const primaryAction = getPrimaryAction();
+
   return (
     <aside className="px-search-detail" aria-label={`Detail ${item.title}`}>
       <div className="px-detail-heading">
@@ -142,12 +173,15 @@ function SearchDetail({ item }: { item: SearchItem }) {
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
             <Status tone="teal">{item.status}</Status>
-            <button className="button ghost" onClick={() => {
-              const next = new URLSearchParams(window.location.search);
-              next.delete("selected");
-              window.history.replaceState(null, "", "?" + next.toString());
-              window.dispatchEvent(new Event("popstate"));
-            }} style={{ padding: '4px' }} aria-label="Tutup detail"><X size={20} /></button>
+            <button
+              className="button ghost"
+              onClick={handleClose}
+              style={{ padding: '4px' }}
+              aria-label="Tutup detail"
+              type="button"
+            >
+              <X size={20} />
+            </button>
           </div>
           <h2>{item.title}</h2>
           <p>{item.owner}</p>
@@ -169,7 +203,14 @@ function SearchDetail({ item }: { item: SearchItem }) {
         {item.gaps.map((gap) => <p key={gap}><Info size={17} />{gap}</p>)}
       </section>
       <div className="px-detail-actions">
-        <a className="pl-button pl-button-primary" href={item.href}>Buka detail <ArrowRight size={17} /></a>
+        {primaryAction.href && primaryAction.label && (
+          <a
+            className="pl-button tautin-search-detail-primary-action"
+            href={primaryAction.href}
+          >
+            {primaryAction.label} <ArrowRight size={17} />
+          </a>
+        )}
         <button
           className="pl-button pl-button-secondary"
           onClick={() => {
@@ -248,6 +289,13 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
     setLocalSelected(slug);
     const next = new URLSearchParams(searchParams.toString());
     next.set("selected", slug);
+    replaceQuery(next);
+  };
+
+  const handleClose = () => {
+    setLocalSelected(null);
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("selected");
     replaceQuery(next);
   };
 
@@ -389,7 +437,7 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
             </div>
           )}
         </section>
-        {selectedItem ? <SearchDetail item={selectedItem} /> : null}
+        {selectedItem ? <SearchDetail item={selectedItem} onClose={handleClose} /> : null}
       </div>
     </div>
   );
