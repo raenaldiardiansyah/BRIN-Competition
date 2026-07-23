@@ -12,7 +12,7 @@ export function AIOrganizationPreview({ children }: { children: ReactNode }) {
             konteks tim, dan penggunaan bersama memerlukan paket Organization.
           </p>
         </div>
-        <Link className="button secondary" href="/subscription?plan=organization">
+        <Link className="button secondary" href="/subscription?mode=compare&plan=organization">
           Pelajari akses Organization
         </Link>
       </aside>

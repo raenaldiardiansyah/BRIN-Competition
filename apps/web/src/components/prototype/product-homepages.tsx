@@ -611,7 +611,7 @@ export function GuestHome() {
             <span className="pl-eyebrow">Project • Contribution • Evidence • Matching • Collaboration</span>
             <h1>Bangun identitas profesional dari pekerjaan nyata.</h1>
             <p>
-              TautIn menghubungkan kebutuhan proyek, kontribusi terverifikasi, dan alasan kecocokan dalam satu ruang kolaborasi.
+              TautIn menghubungkan kebutuhan proyek, kontribusi dikonfirmasi, dan alasan kecocokan dalam satu ruang kolaborasi.
             </p>
             <div className="pl-button-row">
               <Anchor href="/explore" className="pl-button pl-button-primary">Jelajahi proyek</Anchor>
@@ -1056,7 +1056,7 @@ export function GuestHome() {
                       </div>
                       <div className="tw:text-emerald-700 tw:flex tw:items-center tw:gap-1.5">
                         <CheckCircle size={14} weight="fill" className="tw:flex-shrink-0" />
-                        <span>Evidence firmware relevan terverifikasi</span>
+                        <span>Evidence firmware relevan dikonfirmasi</span>
                       </div>
                       <div className="tw:text-amber-700 tw:flex tw:items-center tw:gap-1.5">
                         <span className="tw:font-bold tw:w-3.5 tw:text-center">!</span>
@@ -1090,13 +1090,13 @@ export function GuestHome() {
                       <span className="tw:font-medium tw:text-slate-800 tw:flex tw:items-center tw:gap-1.5">
                         <LinkSimple size={14} className="tw:text-slate-400" /> Repository firmware
                       </span>
-                      <span className="tw:px-2 tw:py-0.5 tw:bg-emerald-100 tw:text-emerald-800 tw:font-semibold tw:rounded tw:text-[10px]">Verified</span>
+                      <span className="tw:px-2 tw:py-0.5 tw:bg-emerald-100 tw:text-emerald-800 tw:font-semibold tw:rounded tw:text-[10px]">Dikonfirmasi</span>
                     </div>
                     <div className="tw:flex tw:items-center tw:justify-between tw:p-2 tw:bg-slate-50 tw:rounded-md tw:border tw:border-slate-100">
                       <span className="tw:font-medium tw:text-slate-800 tw:flex tw:items-center tw:gap-1.5">
                         <ClipboardText size={14} className="tw:text-slate-400" /> Dataset lapangan
                       </span>
-                      <span className="tw:px-2 tw:py-0.5 tw:bg-emerald-100 tw:text-emerald-800 tw:font-semibold tw:rounded tw:text-[10px]">Verified</span>
+                      <span className="tw:px-2 tw:py-0.5 tw:bg-emerald-100 tw:text-emerald-800 tw:font-semibold tw:rounded tw:text-[10px]">Dikonfirmasi</span>
                     </div>
                     <div className="tw:flex tw:items-center tw:justify-between tw:p-2 tw:bg-slate-50 tw:rounded-md tw:border tw:border-slate-100">
                       <span className="tw:font-medium tw:text-slate-800 tw:flex tw:items-center tw:gap-1.5">
@@ -1113,7 +1113,7 @@ export function GuestHome() {
                   </div>
 
                   <div className="tw:mt-3 tw:pt-2 tw:border-t tw:border-slate-100 tw:flex tw:items-center tw:justify-between tw:text-xs">
-                    <span className="tw:text-slate-500 tw:font-medium">2 verified · 1 pending · 1 restricted</span>
+                    <span className="tw:text-slate-500 tw:font-medium">2 dikonfirmasi · 1 pending · 1 restricted</span>
                     <Anchor href="/projects/aqua-loop/contributions" className="tw:font-semibold tw:text-emerald-600 hover:tw:text-emerald-800 tw:flex tw:items-center tw:gap-1">
                       Lihat evidence →
                     </Anchor>
@@ -1133,7 +1133,7 @@ export function GuestHome() {
                   </div>
 
                   <div className="tw:text-xs tw:text-slate-500 tw:mb-3">
-                    Sumber penilaian: <strong className="tw:text-slate-700">Self-reported &amp; AI Verified</strong>
+                    Sumber penilaian: <strong className="tw:text-slate-700">Self-reported &amp; AI Evaluated</strong>
                   </div>
 
                   <div className="tw:grid tw:grid-cols-2 tw:gap-2 tw:text-xs">
@@ -1675,7 +1675,7 @@ export function ReturningUserHome({
           <SectionTitle title="Aktivitas terbaru" />
           <div className="pl-timeline">
             {activities.map((activity, index) => <div key={`${activity}-${index}`}><i /><span><strong>{activity}</strong><small>Baru saja · tersimpan di sesi</small></span></div>)}
-            <div><i /><span><strong>Evidence diverifikasi</strong><small>Pipeline AquaLoop · 2 jam lalu</small></span></div>
+            <div><i /><span><strong>Evidence dikonfirmasi</strong><small>Pipeline AquaLoop · 2 jam lalu</small></span></div>
             <div><i /><span><strong>Raka menambahkan catatan</strong><small>Workspace proyek · Kemarin</small></span></div>
             <div><i /><span><strong>Profil muncul di pencarian</strong><small>4 kali dalam 7 hari</small></span></div>
           </div>
@@ -1814,7 +1814,7 @@ export function DesignSystemPreview() {
           <button className="pl-button pl-button-primary">Tindakan utama</button>
           <button className="pl-button pl-button-secondary">Tindakan sekunder</button>
           <button className="pl-button pl-button-ghost">Tindakan ringan</button>
-          <span className="pl-status success">Terverifikasi</span>
+          <span className="pl-status success">Dikonfirmasi</span>
           <span className="pl-status">PILOT</span>
         </div>
       </section>

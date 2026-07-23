@@ -38,7 +38,7 @@ export function ProductOrganizationPlans() {
               {tierMatrix.organization.audience}
             </p>
             <a 
-              href="/subscription?plan=organization"
+              href="/subscription?mode=compare&plan=organization"
               className="tw:block tw:w-full tw:text-center tw:bg-blue-600 hover:tw:bg-blue-700 tw:text-white tw:font-semibold tw:py-3 tw:rounded-xl tw:transition-colors tw:mb-8"
             >
               Mulai dengan Organization
@@ -86,7 +86,7 @@ export function ProductOrganizationPlans() {
               {tierMatrix.enterprise.audience}
             </p>
             <a
-              href="/subscription?plan=enterprise"
+              href="/subscription?mode=compare&plan=enterprise"
               className="tw:flex tw:items-center tw:justify-center tw:w-full tw:px-6 tw:py-3 tw:text-sm tw:font-semibold tw:text-slate-900 tw:bg-slate-50 tw:border-2 tw:border-slate-200 tw:rounded-xl"
             >
               Lihat preview Enterprise

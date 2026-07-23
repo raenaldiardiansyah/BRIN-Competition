@@ -61,6 +61,15 @@ import { NoveltyCheckerPage } from "@/features/ai/novelty-checker/NoveltyChecker
 import { IndustryMatchingPage } from "@/features/ai/industry-matching/IndustryMatchingPage";
 import { FundingRecommendationPage } from "@/features/ai/funding-recommendation/FundingRecommendationPage";
 import { CommercializationPage } from "@/features/ai/commercialization/CommercializationPage";
+import { ProjectEditorPage, ProjectDetailPage } from "@/features/projects/ProjectLifecyclePages";
+import { ProjectContributionsPage, ContributionEditorPage } from "@/features/projects/ProjectContributionsPages";
+import { CollaborationRequestsPage, CollaborationFormPage } from "@/features/collaboration/CollaborationPages";
+import { MessagesPage } from "@/features/messaging/MessagesPage";
+import { NotificationsPage } from "@/features/notifications/NotificationPages";
+import { ProfileEditorPage } from "@/features/profile/ProfileEditorPage";
+import { OrgPermissionsPage } from "@/features/organization/OrganizationPages";
+import { AdminModerationPage } from "@/features/admin/AdminPages";
+import { getCombinedProjects } from "@/lib/storage/project-storage";
 
 type Persona = "guest" | "new" | "returning" | "organization";
 type SimulatedState = "normal" | "loading" | "empty" | "error";
@@ -922,7 +931,7 @@ function AuthPage({
             Tautan berlaku terbatas dan konteks tujuan tetap tersimpan.
           </p>
           <button className="button primary" onClick={() => router.push(returnTo || "/onboarding/goals")}>Simulasikan email terverifikasi</button>
-          <button className="button ghost">Kirim ulang email</button>
+          <button className="button ghost" disabled title="Tautan ini bersifat statis dalam purwarupa.">Kirim ulang email</button>
         </WireBox>
       </div>
     );
@@ -1054,7 +1063,7 @@ function OnboardingPage({
               <li>○ Pilih visibility</li>
             </ul>
             <ActionLink href="/onboarding/first-value" variant="primary">Simpan koreksi</ActionLink>
-            <button className="button ghost full">Laporkan ekstraksi salah</button>
+            <button className="button ghost full" disabled title="Fitur pelaporan masih dalam pengembangan.">Laporkan ekstraksi salah</button>
           </aside>
         </div>
       </>
@@ -1193,28 +1202,41 @@ function MyProfilePage() {
 }
 
 function MyProjectsPage() {
+  const [projects, setProjects] = useState<any[]>([]);
+  useEffect(() => {
+    setProjects(getCombinedProjects());
+  }, []);
+
   return (
     <>
       <PageHeader
         eyebrow="My projects"
         title="Proyek dan kontribusi"
         description="Ownership dibedakan dari kontribusi."
-        actions={<ActionLink href="/onboarding/project-source" variant="primary">Tambah proyek</ActionLink>}
+        actions={<ActionLink href="/projects/create" variant="primary">Tambah proyek</ActionLink>}
       />
       <div className="filter-bar">
-        <button className="active">Owned (1)</button>
+        <button className="active">Owned ({projects.length})</button>
         <button>Contributing (2)</button>
-        <button>Drafts (1)</button>
-        <button>Invitations (1)</button>
         <button>Archived</button>
       </div>
-      <ProjectCard />
-      <article className="card dashed-card">
-        <Badge tone="warning">Draft tersimpan</Badge>
-        <h3>Community Sensor Toolkit</h3>
-        <p>Terakhir diedit 18 Jul · belum dipublikasikan.</p>
-        <ActionLink href="/onboarding/ai-review">Lanjutkan draft</ActionLink>
-      </article>
+
+      {projects.map((p: any) => (
+        <article className="card" key={p.id} style={{ marginBottom: "16px" }}>
+          <div className="card-topline">
+            <Badge tone={p.lifecycle === "DRAFT" ? "warning" : "info"}>{p.lifecycle}</Badge>
+            <span className="muted">Readiness: {p.readiness}</span>
+          </div>
+          <h3>{p.title}</h3>
+          <p>{p.problem}</p>
+          <div className="button-row">
+            <ActionLink href={p.lifecycle === "DRAFT" ? `/projects/edit?project=${p.id}` : `/projects/detail?project=${p.id}`} variant="primary">
+              {p.lifecycle === "DRAFT" ? "Lanjutkan draft" : "Lihat detail"}
+            </ActionLink>
+          </div>
+        </article>
+      ))}
+
     </>
   );
 }
@@ -1245,7 +1267,7 @@ function ManageProjectPage() {
           <label>Judul<input defaultValue={project.title} /></label>
           <label>Masalah<textarea defaultValue="Laboratorium komunitas kesulitan memantau perubahan kualitas air secara berkala." rows={3} /></label>
           <label>Hasil<textarea defaultValue="Pilot tiga lokasi dengan pembacaan setiap 15 menit." rows={3} /></label>
-          <button className="button primary">Simpan perubahan</button>
+          <button className="button primary" disabled title="Simpan draft berjalan secara otomatis.">Simpan perubahan</button>
           <span className="save-status">Draft tersimpan otomatis</span>
         </WireBox>
         <aside className="side-panel">
@@ -1255,7 +1277,7 @@ function ManageProjectPage() {
           <p className="microcopy">Status belum dikonfirmasi organisasi.</p>
           <h3 id="members">Ownership</h3>
           <p>Milik personal · Maya Pradipta</p>
-          <button className="button ghost full">Tinjau transfer ke organisasi</button>
+          <button className="button ghost full" disabled title="Pemindahan ownership belum tersedia di prototype.">Tinjau transfer ke organisasi</button>
         </aside>
       </div>
     </>
@@ -1302,7 +1324,10 @@ function ContributionsPage({
         </Badge>
         {!isGuest && evidence.ownership ? <span className="microcopy">Ownership: {evidence.ownership}</span> : null}
         {!isGuest && evidence.sourceStatus === "AVAILABLE" ? (
-          <button className="button secondary" type="button">View evidence</button>
+          <div className="tw:flex tw:flex-col tw:items-end tw:gap-1">
+            <button className="button secondary" disabled aria-describedby="evidence-limitation">View evidence</button>
+            <span id="evidence-limitation" className="tw:text-[11px] tw:text-slate-500">Halaman evidence belum tersedia di purwarupa.</span>
+          </div>
         ) : null}
       </article>
     );
@@ -1443,7 +1468,7 @@ function MatchDetailPage({ demo }: { demo: DemoState }) {
             <li>{match?.core?.mainGap}</li>
             <li>{match?.core?.dataLimitation}</li>
           </ul>
-          <button className="button ghost">Berikan feedback pada hasil</button>
+          <button className="button ghost" disabled title="Umpan balik langsung sedang dalam integrasi pipeline.">Berikan feedback pada hasil</button>
         </WireBox>
         <WireBox title="Tindakan berikutnya">
           <p>{match?.core?.nextAction?.label}</p>
@@ -1496,7 +1521,7 @@ function CollaborationPage({
       <div className="request-list">
         <article className="request-card">
           <div><Badge tone="warning">Action required</Badge><h3>Undangan pilot dari {dummyOrganizations.find(o => o.slug === "nusantara")?.displayName}</h3><p>Research Pilot · {dummyProjects.find(p => p.slug === "aqua-loop")?.title} · balas sebelum 25 Jul</p></div>
-          <div className="button-row"><button className="button primary" onClick={() => updateDemo({ applicationSent: true })}>{demo.applicationSent ? "Diterima ✓" : "Terima"}</button><button className="button secondary">Minta detail</button><button className="button ghost">Tolak</button></div>
+          <div className="button-row"><button className="button primary" onClick={() => updateDemo({ applicationSent: true })}>{demo.applicationSent ? "Diterima ✓" : "Terima"}</button><button className="button secondary" onClick={() => window.alert("Simulasi: Meminta detail tambahan dari pelamar.")}>Minta detail</button><button className="button ghost" onClick={() => window.alert("Simulasi: Menolak permintaan kolaborasi.")}>Tolak</button></div>
         </article>
         <article className="request-card">
           <div><Badge tone="info">Contribution confirmation</Badge><h3>Konfirmasi outcome AquaLoop</h3><p>Periksa role, hasil, periode, dan evidence sebelum mengonfirmasi.</p></div>
@@ -1505,7 +1530,7 @@ function CollaborationPage({
         {demo.invitationSent ? (
           <article className="request-card">
             <div><Badge tone="success">Terkirim</Badge><h3>Undangan untuk Maya Pradipta</h3><p>Data Engineer · AquaLoop · menunggu respons</p></div>
-            <button className="button secondary">Lihat status</button>
+            <ActionLink href="/collaboration/requests?request=req-123" variant="secondary">Lihat status</ActionLink>
           </article>
         ) : null}
       </div>
@@ -1555,7 +1580,7 @@ function CollaborationForm({
   );
 }
 
-function NotificationsPage({
+function LegacyNotificationsPage({
   demo,
   updateDemo,
 }: {
@@ -1579,7 +1604,7 @@ function NotificationsPage({
         <article className="notification">
           <span className="priority-dot quiet" />
           <div><Badge>Recommendation</Badge><h3>3 proyek environmental data baru</h3><p>Ditampilkan karena bidang yang Anda ikuti.</p></div>
-          <button className="button ghost">Sembunyikan sejenis</button>
+          <button className="button ghost" disabled title="Pengelompokan notifikasi sejenis belum disimulasikan.">Sembunyikan sejenis</button>
         </article>
       </div>
     </>
@@ -1604,8 +1629,8 @@ function PrivacyPage() {
             <div className="setting-row"><div><strong>AI project assistance</strong><span>Saran selalu perlu ditinjau sebelum publikasi.</span></div><input type="checkbox" defaultChecked /></div>
           </WireBox>
           <WireBox title="Data & recovery">
-            <button className="button secondary">Export data</button>
-            <button className="button ghost">Deactivate account</button>
+            <button className="button secondary" disabled title="Ekspor data tunduk pada kebijakan privasi di versi rilis.">Export data</button>
+            <button className="button ghost" disabled title="Aksi destruktif dikunci dalam mode purwarupa.">Deactivate account</button>
             <p className="microcopy">Tindakan destruktif akan menampilkan impact preview dan tidak menghapus contribution history secara diam-diam.</p>
           </WireBox>
         </div>
@@ -1628,7 +1653,7 @@ function OrganizationPage({
   if (section === "profile") {
     return (
       <>
-        <PageHeader eyebrow="Organization profile" title="Nusantara Labs" description="Applied research · Climate resilience · Bandung" actions={<button className="button secondary">Edit organization profile</button>} />
+        <PageHeader eyebrow="Organization profile" title="Nusantara Labs" description="Applied research · Climate resilience · Bandung" actions={<div className="tw:flex tw:flex-col tw:items-end"><button className="button secondary" disabled aria-describedby="org-edit-limitation">Edit organization profile</button><span id="org-edit-limitation" className="tw:text-[11px] tw:text-slate-500 tw:mt-1">Editor profil organisasi belum dirender.</span></div>} />
         <div className="project-meta"><Badge tone="success">Organization verified</Badge><span>Plan: Organization</span><span>Public collaboration policy</span></div>
         <div className="two-column"><WireBox title="Tentang"><p>Laboratorium terapan yang menghubungkan riset lingkungan, pilot industri, dan komunitas.</p></WireBox><WireBox title="Trust scope"><p>Identitas organisasi terverifikasi. Kontribusi dan project status tetap memiliki label terpisah.</p></WireBox></div>
       </>
@@ -1637,7 +1662,7 @@ function OrganizationPage({
   if (section === "projects") {
     return (
       <>
-        <PageHeader eyebrow="Organization projects" title="Proyek & peluang" description="Owned, partnered, public, private, dan archived dipisahkan." actions={<button className="button primary">Buat peluang</button>} />
+        <PageHeader eyebrow="Organization projects" title="Proyek & peluang" description="Owned, partnered, public, private, dan archived dipisahkan." actions={<ActionLink href="/projects/create" variant="primary">Buat peluang</ActionLink>} />
         <div className="filter-bar"><button className="active">Active</button><button>Opportunities</button><button>Private</button><button>Partnered</button><button>Archived</button></div>
         <ProjectCard />
         <article className="card"><Badge tone="info">Open opportunity</Badge><h3>Urban Heat Mapping Research Pilot</h3><p>4 applications · 2 perlu ditinjau · Owner: Dimas K.</p><ActionLink href="/org/nusantara/pipeline">Buka applications</ActionLink></article>
@@ -1678,8 +1703,8 @@ function OrganizationPage({
   if (section === "members") {
     return (
       <>
-        <PageHeader eyebrow="Members & permission" title="Anggota organisasi" description="Role mengikuti least privilege; billing tidak membuka proyek privat." actions={<button className="button primary">Undang anggota</button>} />
-        <div className="table-card"><div className="table-head"><span>Anggota</span><span>Role</span><span>Scope</span><span>Status</span><span>Aksi</span></div>{[["Ayu Rahman","Organization Owner","All workspace"],["Dimas K.","Project Manager","2 assigned projects"],["Nadia Putri","Scout / Recruiter","Search + shortlist"],["Bagus A.","Billing Admin","Billing only"]].map(([name,role,scope])=><div className="table-row" key={name}><span><strong>{name}</strong></span><span>{role}</span><span>{scope}</span><span><Badge tone="success">Active</Badge></span><span><button className="button ghost">Edit role</button></span></div>)}</div>
+        <PageHeader eyebrow="Members & permission" title="Anggota organisasi" description="Role mengikuti least privilege; billing tidak membuka proyek privat." actions={<button className="button primary" disabled title="Undangan email dinonaktifkan di purwarupa statis.">Undang anggota</button>} />
+        <div className="table-card"><div className="table-head"><span>Anggota</span><span>Role</span><span>Scope</span><span>Status</span><span>Aksi</span></div>{[["Ayu Rahman","Organization Owner","All workspace"],["Dimas K.","Project Manager","2 assigned projects"],["Nadia Putri","Scout / Recruiter","Search + shortlist"],["Bagus A.","Billing Admin","Billing only"]].map(([name,role,scope])=><div className="table-row" key={name}><span><strong>{name}</strong></span><span>{role}</span><span>{scope}</span><span><Badge tone="success">Active</Badge></span><span><button className="button ghost" disabled title="Perubahan akses role belum tersedia di mock ini.">Edit role</button></span></div>)}</div>
         <WireBox title="Ownership guardrail" className="subtle-box"><p>Akun personal dan kontribusi tetap milik pengguna. Organisasi dapat mencabut akses workspace, bukan menghapus identitas personal.</p></WireBox>
       </>
     );
@@ -2231,15 +2256,23 @@ export function PrototypeApp() {
     }
     if (pathname === "/me") return <MyProfilePage />;
     if (pathname === "/my-projects") return <MyProjectsPage />;
+    if (pathname === "/projects/create") return <ProjectEditorPage />;
+    if (pathname === "/projects/edit") return <ProjectEditorPage projectId={searchParams.get("project") ?? ""} />;
+    if (pathname === "/projects/detail") return <ProjectDetailPage projectId={searchParams.get("project") ?? ""} />;
+    if (pathname === "/projects/contributions") return <ProjectContributionsPage projectId={searchParams.get("project") ?? ""} />;
+    if (pathname === "/projects/contributions/edit") return <ContributionEditorPage projectId={searchParams.get("project") ?? ""} contributionId={searchParams.get("contribution") ?? undefined} />;
     if (pathname === "/projects/aqua-loop/manage") return <ManageProjectPage />;
     if (pathname === "/projects/aqua-loop/contributions") return <ContributionsPage demo={demo} updateDemo={updateDemo} />;
     if (pathname === "/discovery") return <DiscoveryPage demo={demo} updateDemo={updateDemo} />;
     if (pathname === "/matches/aqua-maya") return <MatchDetailPage demo={demo} />;
     if (pathname === "/saved") return <SavedPage demo={demo} />;
-    if (pathname === "/collaboration") return <CollaborationPage demo={demo} updateDemo={updateDemo} />;
-    if (pathname === "/collaboration/new") return <CollaborationForm demo={demo} updateDemo={updateDemo} />;
-    if (pathname === "/notifications") return <NotificationsPage demo={demo} updateDemo={updateDemo} />;
+    if (pathname === "/collaboration" || pathname === "/collaboration/requests") return <CollaborationRequestsPage />;
+    if (pathname === "/collaboration/new") return <CollaborationFormPage projectId={searchParams.get("project") ?? ""} />;
+    if (pathname === "/messages") return <MessagesPage threadId={searchParams.get("thread") ?? undefined} />;
+    if (pathname === "/me/edit") return <ProfileEditorPage />;
+    if (pathname === "/notifications") return <NotificationsPage />;
     if (pathname === "/settings/privacy") return <PrivacyPage />;
+    if (pathname === "/admin/moderation") return <AdminModerationPage />;
     if (pathname === "/subscription") return <SubscriptionPage 
           subscription={subscription} 
           onOverrideChange={(patch) => updateDemo({ 
@@ -2249,6 +2282,7 @@ export function PrototypeApp() {
             } 
           })} 
         />;
+    if (pathname === "/organization/settings/permissions") return <OrgPermissionsPage orgId={searchParams.get("organization") ?? "org-nexa"} />;
     if (pathname === "/ai") return <AIHubPage />;
     if (pathname === "/ai/collaboration-matching") return <CollaborationMatchingPage />;
     if (pathname === "/ai/innovation-profile") return <InnovationProfilePage />;

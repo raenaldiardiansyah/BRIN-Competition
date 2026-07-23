@@ -70,10 +70,12 @@ export function SubscriptionPage({
   const currentPlan = subscription;
   const currentTier = tierMatrix[currentPlan.plan === "none" ? "free" : currentPlan.plan];
   const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") === "manage" ? "manage" : "compare";
+  const isManageMode = mode === "manage";
   const requestedPlan = searchParams.get("plan");
   const initialSelectedPlan = requestedPlan && requestedPlan in tierMatrix
     ? requestedPlan as keyof typeof tierMatrix
-    : currentPlan.plan === "none" ? "free" : currentPlan.plan;
+    : "pro";
   
   // Local state for billing cycle pricing display & FAQ dropdown accordion
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -99,7 +101,7 @@ export function SubscriptionPage({
   const handlePlanPreview = (plan: keyof typeof tierMatrix) => {
     setSelectedPlan(plan);
     setSelectionMessage("");
-    window.history.replaceState(null, "", `/subscription?plan=${plan}`);
+    window.history.replaceState(null, "", `/subscription?mode=${mode}&plan=${plan}`);
     requestAnimationFrame(() => document.getElementById("selected-plan-detail")?.focus());
   };
 
@@ -131,19 +133,21 @@ export function SubscriptionPage({
 
   return (
     <div className="pl-ui-scope">
-      <SubscriptionNotifications 
-        usageState={aiStatus}
-        plan={currentPlan.plan}
-        used={aiUsed}
-        limit={currentPlan.ai.usage.limit}
-      />
+      {isManageMode ? (
+        <SubscriptionNotifications
+          usageState={aiStatus}
+          plan={currentPlan.plan}
+          used={aiUsed}
+          limit={currentPlan.ai.usage.limit}
+        />
+      ) : null}
 
       {/* Prototype Notice - subtle */}
       <div className="tw:bg-slate-50 tw:border-b tw:border-slate-200 tw:text-slate-600 tw:px-4 tw:py-2 tw:text-xs tw:text-center tw:font-medium">
         Mode Prototype: Data simulasi. Perubahan paket belum diproses secara nyata pada tahap ini.
       </div>
 
-      {isPastDue && (
+      {isManageMode && isPastDue && (
         <section id="billing-status" tabIndex={-1} className="tw:bg-red-50 tw:border-b tw:border-red-200 tw:px-4 tw:py-3 tw:flex tw:items-center tw:justify-center tw:gap-2 tw:scroll-mt-20 tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-inset focus-visible:tw:ring-red-400">
           <WarningCircle className="tw:w-5 tw:h-5 tw:text-red-600" weight="fill" />
           <p className="tw:text-sm tw:font-medium tw:text-red-900">
@@ -178,28 +182,28 @@ export function SubscriptionPage({
           <div className="subscription-hero__overlay" aria-hidden="true" />
           <div className="subscription-hero__content">
             <h1
-              aria-label="Tingkatkan Kapasitas Kolaborasi"
+              aria-label={isManageMode ? "Paket dan penggunaan Anda" : "Pilih paket sesuai kebutuhan inovasi Anda"}
               className="subscription-hero__headline tw:font-extrabold tw:tracking-tight"
             >
               <span className="subscription-hero__line">
-                <BlurText text="Tingkatkan" animateBy="words" direction="top" delay={80} stepDuration={0.35} className="subscription-hero__word subscription-hero__word--navy" />
+                <BlurText text={isManageMode ? "Paket dan" : "Pilih paket sesuai"} animateBy="words" direction="top" delay={80} stepDuration={0.35} className="subscription-hero__word subscription-hero__word--navy" />
               </span>
               <span className="subscription-hero__line subscription-hero__line--accent">
-                <BlurText text="Kapasitas" animateBy="words" direction="top" delay={80} stepDuration={0.35} className="subscription-hero__word subscription-hero__word--brand" />
-                {" "}
-                <BlurText text="Kolaborasi" animateBy="words" direction="top" delay={95} stepDuration={0.35} className="subscription-hero__word subscription-hero__word--teal" />
+                <BlurText text={isManageMode ? "penggunaan Anda" : "kebutuhan inovasi Anda"} animateBy="words" direction="top" delay={80} stepDuration={0.35} className="subscription-hero__word subscription-hero__word--brand" />
               </span>
             </h1>
             <FadeContent delay={180} duration={460} translateY={14} blur threshold={0.2}>
               <p className="subscription-hero__description tw:text-base md:tw:text-lg tw:max-w-[820px] tw:mx-auto tw:leading-relaxed tw:mt-8">
-                Free Core tetap gratis selamanya. Paket Pro memberikan analitik mendalam dan kuota AI ekstra.
-                Status berlangganan tidak memengaruhi kredibilitas atau ranking profil Anda.
+                {isManageMode
+                  ? "Tinjau paket aktif, penggunaan, kuota, dan preview paket lain tanpa mengubah entitlement Anda."
+                  : "Bandingkan fitur dan kisaran harga prototype sebelum menentukan paket."}
               </p>
             </FadeContent>
           </div>
         </section>
 
         {/* Current Plan Card */}
+        {isManageMode ? (
         <SpotlightCard className="tw:bg-white tw:rounded-2xl tw:border tw:border-slate-200 tw:p-8 tw:mb-14 tw:shadow-sm">
           <section aria-labelledby="current-plan-title">
           <div className="tw:grid tw:grid-cols-1 md:tw:grid-cols-2 tw:gap-8 tw:items-center">
@@ -277,18 +281,23 @@ export function SubscriptionPage({
           </div>
           </section>
         </SpotlightCard>
+        ) : null}
 
         {/* Pricing Cards */}
         <section id="plans" tabIndex={-1} className="tw:mb-16 tw:scroll-mt-20 tw:outline-none focus-visible:tw:ring-2 focus-visible:tw:ring-slate-400 focus-visible:tw:rounded-2xl">
           <div className="tw:text-center tw:mb-8">
             <h2 className="tw:text-2xl tw:font-bold tw:text-slate-900">Pilih paket untuk melihat detail</h2>
-            <p className="tw:text-sm tw:text-slate-600 tw:mt-2">Pilihan ini hanya mengubah preview. Paket aktif Anda tetap {currentTier.label}.</p>
+            <p className="tw:text-sm tw:text-slate-600 tw:mt-2">
+              {isManageMode
+                ? `Pilihan ini hanya mengubah preview. Paket aktif Anda tetap ${currentTier.label}.`
+                : "Pilih paket untuk memperbarui detail preview. Tidak ada paket aktif atau transaksi yang dibuat."}
+            </p>
           </div>
 
           <div className="subscription-pricing-cards-grid tw:grid tw:grid-cols-1 md:tw:grid-cols-2 xl:tw:grid-cols-3 tw:items-stretch tw:gap-6 lg:tw:gap-8">
             {(["free", "pro", "organization"] as const).map((planId) => {
               const tier = tierMatrix[planId];
-              const active = currentPlan.plan === planId;
+              const active = isManageMode && currentPlan.plan === planId;
               const selected = selectedPlan === planId;
               return (
                 <button
@@ -373,9 +382,11 @@ export function SubscriptionPage({
                 <strong className="tw:block tw:text-2xl tw:text-slate-900 tw:mt-6">{selectedTier.pricing.display}</strong>
                 <span className="tw:inline-flex tw:mt-2 tw:px-2.5 tw:py-1 tw:rounded-full tw:bg-amber-50 tw:text-amber-800 tw:text-xs tw:font-semibold">{selectedTier.pricing.label}</span>
                 <div className="tw:mt-6 tw:p-4 tw:rounded-xl tw:bg-slate-50 tw:border tw:border-slate-200">
-                  <strong className="tw:text-sm tw:text-slate-900">Dibandingkan paket aktif</strong>
+                  <strong className="tw:text-sm tw:text-slate-900">{isManageMode ? "Dibandingkan paket aktif" : "Preview paket netral"}</strong>
                   <p className="tw:text-sm tw:text-slate-600 tw:mt-1">
-                    Paket aktif tetap {currentTier.label}. Preview {selectedTier.label} tidak mengubah entitlement atau memproses pembayaran.
+                    {isManageMode
+                      ? `Paket aktif tetap ${currentTier.label}. Preview ${selectedTier.label} tidak mengubah entitlement atau memproses pembayaran.`
+                      : `Anda sedang melihat ${selectedTier.label}. Compare mode tidak membaca atau mengaktifkan entitlement pengguna.`}
                   </p>
                 </div>
               </div>
@@ -399,7 +410,11 @@ export function SubscriptionPage({
                   <button
                     type="button"
                     className="button primary tw:justify-center"
-                    onClick={() => setSelectionMessage(`Pilihan ${selectedTier.label} disimpan sebagai simulasi preview. Paket aktif tetap ${currentTier.label}.`)}
+                    onClick={() => setSelectionMessage(
+                      isManageMode
+                        ? `Pilihan ${selectedTier.label} disimpan sebagai simulasi preview. Paket aktif tetap ${currentTier.label}.`
+                        : `Pilihan ${selectedTier.label} disimpan sebagai simulasi preview. Tidak ada entitlement atau pembayaran yang diaktifkan.`
+                    )}
                   >
                     {selectedPlan === "organization" ? "Simulasikan pilihan Organization" : `Simulasikan pilihan ${selectedTier.label}`}
                   </button>

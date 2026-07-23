@@ -64,7 +64,7 @@ export const tierMatrix: Record<Exclude<SubscriptionPlan, "none">, TierDefinitio
       label: "Simulasi harga prototype"
     },
     ctaLabel: "Kelola langganan",
-    ctaRoute: "/subscription"
+    ctaRoute: "/subscription?mode=compare&plan=pro"
   },
   organization: {
     id: "organization",
@@ -82,7 +82,7 @@ export const tierMatrix: Record<Exclude<SubscriptionPlan, "none">, TierDefinitio
       label: "Simulasi harga prototype"
     },
     ctaLabel: "Lihat preview Organization",
-    ctaRoute: "/subscription?plan=organization"
+    ctaRoute: "/subscription?mode=compare&plan=organization"
   },
   enterprise: {
     id: "enterprise",
@@ -100,7 +100,7 @@ export const tierMatrix: Record<Exclude<SubscriptionPlan, "none">, TierDefinitio
       label: "Simulasi harga prototype"
     },
     ctaLabel: "Lihat preview Enterprise",
-    ctaRoute: "/subscription?plan=enterprise"
+    ctaRoute: "/subscription?mode=compare&plan=enterprise"
   }
 };
 

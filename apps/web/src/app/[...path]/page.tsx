@@ -74,10 +74,35 @@ const prototypeRoutes = [
   "ai/industry-matching",
   "ai/funding-recommendation",
   "ai/commercialization",
+  // Phase 1-8 New Fixed Routes
+  "projects/create",
+  "projects/edit",
+  "projects/detail",
+  "projects/contributions",
+  "projects/contributions/edit",
+  "collaboration/requests",
+  "collaboration/new",
+  "messages",
+  "me/edit",
+  "organization/settings/permissions",
+  "admin/moderation",
 ];
 
+function normalizeStaticPath(route: string) {
+  const pathname = route.split(/[?#]/, 1)[0].replace(/^\/+|\/+$/g, "");
+  const segments = pathname.split("/").filter(Boolean);
+  return segments.length ? segments : null;
+}
+
 export function generateStaticParams() {
-  return prototypeRoutes.map((route) => ({ path: route.split("/") }));
+  const uniquePaths = new Map<string, string[]>();
+
+  for (const route of prototypeRoutes) {
+    const path = normalizeStaticPath(route);
+    if (path) uniquePaths.set(path.join("/"), path);
+  }
+
+  return Array.from(uniquePaths.values(), (path) => ({ path }));
 }
 
 export const dynamicParams = false;

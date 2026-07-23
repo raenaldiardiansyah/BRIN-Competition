@@ -12,6 +12,7 @@ apps/*/dist
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 .DS_Store
+.openai/
 
 # Private product and UX documentation — keep local only.
 docs/

@@ -80,7 +80,7 @@ export const featuredProjects: FeaturedProject[] = [
       }
     ],
     evidence: [
-      { type: "Repository", title: "aqualoop-sensor-pipeline", status: "Verified" },
+      { type: "Repository", title: "aqualoop-sensor-pipeline", status: "Dikonfirmasi" },
       { type: "Test Report", title: "Uji Validasi Sensor DAS Citarum", status: "Approved" },
       { type: "Project Doc", title: "Spesifikasi Kalibrasi Elektrik v1.2", status: "Signed" }
     ],
@@ -97,7 +97,7 @@ export const featuredProjects: FeaturedProject[] = [
       primaryReason: "3 kebutuhan proyek cocok dengan evidence Anda di bidang visualisasi spasial.",
       supportingEvidence: [
         "Repository pemetaan suhu perkotaan di profil Anda",
-        "Dokumentasi pengujian sensor cuaca terverifikasi BRIN"
+        "Dokumentasi pengujian sensor cuaca dikonfirmasi BRIN"
       ],
       mainGap: "Keahlian kalibrasi fisik sensor IoT (dapat diselesaikan via pendampingan)",
       confidenceLabel: "Keyakinan Tinggi (82%)",
@@ -127,9 +127,9 @@ export const featuredProjects: FeaturedProject[] = [
       }
     ],
     evidence: [
-      { type: "Model Spasial", title: "urban-heat-ndvi-model", status: "Verified" },
+      { type: "Model Spasial", title: "urban-heat-ndvi-model", status: "Dikonfirmasi" },
       { type: "Metadata Citra", title: "Landsat-9 Correction Log", status: "Approved" },
-      { type: "Project Doc", title: "Urban Heat Mitigation Report", status: "Verified" }
+      { type: "Project Doc", title: "Urban Heat Mitigation Report", status: "Dikonfirmasi" }
     ],
     openNeeds: [
       { id: "need-uh-1", title: "Remote Sensing Specialist", role: "Landsat Analysis", commitment: "8 jam/minggu", status: "open" },
@@ -175,7 +175,7 @@ export const featuredProjects: FeaturedProject[] = [
     ],
     evidence: [
       { type: "Skema CAD", title: "agri-sensor-enclosure-v2", status: "Approved" },
-      { type: "ESP32 Code", title: "esp32-deep-sleep-gps", status: "Verified" },
+      { type: "ESP32 Code", title: "esp32-deep-sleep-gps", status: "Dikonfirmasi" },
       { type: "Project Doc", title: "Laporan Kalibrasi Suhu Tani", status: "Signed" }
     ],
     openNeeds: [

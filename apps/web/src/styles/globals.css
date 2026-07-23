@@ -1904,6 +1904,17 @@ button:disabled {
   background: var(--accent);
 }
 
+.pl-action-primary {
+  background-color: rgb(7, 95, 247) !important;
+  color: rgb(255, 255, 255) !important;
+  border-color: rgb(7, 95, 247) !important;
+}
+
+.pl-action-primary:hover {
+  background-color: rgb(0, 76, 214) !important;
+  border-color: rgb(0, 76, 214) !important;
+}
+
 .button.secondary {
   color: var(--ink);
   background: var(--paper);

@@ -22,8 +22,9 @@ import {
   WarningCircle,
   X,
 } from "@phosphor-icons/react";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { BackButton } from "@/components/ui/BackButton";
 import {
   filterLabels,
   filterOptions,
@@ -44,9 +45,13 @@ function go(url: string) {
   window.location.assign(url);
 }
 
-function replaceQuery(next: URLSearchParams) {
-  const query = next.toString();
-  go(query ? `${window.location.pathname}?${query}` : window.location.pathname);
+function useReplaceQuery() {
+  const router = useRouter();
+  const pathname = usePathname();
+  return (next: URLSearchParams) => {
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
 }
 
 function usePrototypeSession<T>(key: string, initial: T) {
@@ -84,9 +89,11 @@ function Status({ children, tone = "blue" }: { children: React.ReactNode; tone?:
 function SearchResultCard({
   item,
   selected,
+  onSelect,
 }: {
   item: SearchItem;
   selected: boolean;
+  onSelect?: (slug: string) => void;
 }) {
   const params = new URLSearchParams(
     typeof window === "undefined" ? "" : window.location.search,
@@ -96,6 +103,12 @@ function SearchResultCard({
     <a
       className={`px-result-card${selected ? " selected" : ""}`}
       href={`/search?${params.toString()}`}
+      onClick={(e) => {
+        if (onSelect) {
+          e.preventDefault();
+          onSelect(item.slug);
+        }
+      }}
       aria-current={selected ? "true" : undefined}
     >
       <div className="px-result-icon"><IconForScope scope={item.scope} /></div>
@@ -126,7 +139,19 @@ function SearchDetail({ item }: { item: SearchItem }) {
     <aside className="px-search-detail" aria-label={`Detail ${item.title}`}>
       <div className="px-detail-heading">
         <div className="px-result-icon large"><IconForScope scope={item.scope} size={27} /></div>
-        <div><Status tone="teal">{item.status}</Status><h2>{item.title}</h2><p>{item.owner}</p></div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <Status tone="teal">{item.status}</Status>
+            <button className="button ghost" onClick={() => {
+              const next = new URLSearchParams(window.location.search);
+              next.delete("selected");
+              window.history.replaceState(null, "", "?" + next.toString());
+              window.dispatchEvent(new Event("popstate"));
+            }} style={{ padding: '4px' }} aria-label="Tutup detail"><X size={20} /></button>
+          </div>
+          <h2>{item.title}</h2>
+          <p>{item.owner}</p>
+        </div>
       </div>
       <p>{item.summary}</p>
       <section>
@@ -162,9 +187,15 @@ function SearchDetail({ item }: { item: SearchItem }) {
 
 export function ContextualSearchExperience({ initialScope }: { initialScope?: SearchScope }) {
   const searchParams = useSearchParams();
+  const replaceQuery = useReplaceQuery();
+  const [localSelected, setLocalSelected] = useState<string | null>(searchParams.get("selected"));
+
+  useEffect(() => {
+    setLocalSelected(searchParams.get("selected"));
+  }, [searchParams]);
+
   const scope = (searchParams.get("scope") as SearchScope | null) ?? initialScope;
   const q = searchParams.get("q") ?? "";
-  const selected = searchParams.get("selected");
   const sort = searchParams.get("sort") ?? "relevance";
   const prototypeState = searchParams.get("prototypeState");
   useEffect(() => {
@@ -211,7 +242,14 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
       if (key === "status") return item.status === value;
       return true;
     }));
-  const selectedItem = results.find((item) => item.slug === selected);
+  const selectedItem = results.find((item) => item.slug === localSelected);
+
+  const handleSelect = (slug: string) => {
+    setLocalSelected(slug);
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("selected", slug);
+    replaceQuery(next);
+  };
 
   const changeScope = (nextScope: SearchScope) => {
     const next = new URLSearchParams();
@@ -224,6 +262,7 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
     const validatedSort = nextConfig.sorts.includes(sort as never) ? sort : "relevance";
     if (validatedSort !== "relevance") next.set("sort", validatedSort);
     if (prototypeState) next.set("prototypeState", prototypeState);
+    setLocalSelected(null);
     replaceQuery(next);
   };
 
@@ -231,6 +270,7 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
     const next = new URLSearchParams(searchParams.toString());
     next.delete(key);
     next.delete("selected");
+    setLocalSelected(null);
     replaceQuery(next);
   };
 
@@ -280,6 +320,7 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
             const next = new URLSearchParams();
             next.set("scope", scope);
             if (q) next.set("q", q);
+            setLocalSelected(null);
             replaceQuery(next);
           }} type="button">Hapus semua</button>
         ) : null}
@@ -331,7 +372,7 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
               <a className="pl-button pl-button-primary" href={`/search?${searchParams.toString().replace("prototypeState=error", "")}`}>Coba lagi</a>
             </div>
           ) : results.length ? (
-            results.map((item) => <SearchResultCard item={item} selected={selected === item.slug} key={item.id} />)
+            results.map((item) => <SearchResultCard item={item} selected={localSelected === item.slug} onSelect={handleSelect} key={item.id} />)
           ) : (
             <div className="px-search-state">
               <MagnifyingGlass size={38} weight="duotone" />
@@ -375,10 +416,9 @@ function evidenceSourceLabel(sourceStatus: string) {
 }
 
 function evidenceReviewLabel(reviewStatus: string) {
-  if (reviewStatus === "VERIFIED") return "Terverifikasi";
-  if (reviewStatus === "PENDING") return "Menunggu tinjauan";
-  if (reviewStatus === "UNREVIEWED") return "Belum ditinjau";
-  return reviewStatus;
+  if (reviewStatus === "VERIFIED") return "Dikonfirmasi";
+  if (reviewStatus === "PENDING") return "Menunggu konfirmasi";
+  return "Belum diverifikasi independen";
 }
 
 function PublicProjectDetailSection({
@@ -521,7 +561,7 @@ function PublicProjectDetailSection({
           </div>
         ) : null}
         <p className="tw:text-[11px] tw:text-slate-400 tw:italic">
-          Verifikasi terikat secara spesifik pada masing-masing dokumen evidence dan tidak berlaku sebagai klaim menyeluruh terhadap seluruh komponen proyek.
+          Status dikonfirmasi terikat secara spesifik pada masing-masing dokumen evidence dan tidak berlaku sebagai klaim menyeluruh terhadap seluruh komponen proyek.
         </p>
       </section>
 
@@ -683,7 +723,7 @@ export function PublicEntityExperience({
               </section>
               <section className="px-content-card">
                 <h2>Evidence dan konfirmasi</h2>
-                <div className="px-verification"><ShieldCheck size={24} weight="duotone" /><div><strong>{item.verification}</strong><span>Scope verifikasi selalu dijelaskan; tidak menjadi klaim menyeluruh.</span></div></div>
+                <div className="px-verification"><ShieldCheck size={24} weight="duotone" /><div><strong>{item.verification}</strong><span>Status hanya indikasi lokal; tidak menjadi klaim independen menyeluruh.</span></div></div>
                 {item.evidence.map((evidence) => <div className="px-evidence-line" key={evidence}><ClipboardText size={18} />{evidence}</div>)}
               </section>
               {scope === "people" ? (
@@ -706,7 +746,10 @@ export function PublicEntityExperience({
           {isProject ? (
             isOrg ? (
               <div className="tw:space-y-2">
-                <button className="pl-button pl-button-primary tw:w-full tw:opacity-50 tw:cursor-not-allowed" disabled>
+                <button
+                  className="pl-button tautin-collaboration-primary-action tw:w-full tw:opacity-50 tw:cursor-not-allowed tw:flex tw:items-center tw:justify-center"
+                  disabled
+                >
                   Ajukan kolaborasi
                 </button>
                 <p className="tw:text-[11px] tw:text-slate-500 tw:text-center">
@@ -715,7 +758,10 @@ export function PublicEntityExperience({
               </div>
             ) : (
               <div className="tw:space-y-2">
-                <a className="pl-button pl-button-primary tw:w-full tw:text-center tw:block" href={colabHref}>
+                <a
+                  className="pl-button tautin-collaboration-primary-action tw:w-full tw:text-center tw:flex tw:items-center tw:justify-center"
+                  href={colabHref}
+                >
                   Ajukan kolaborasi
                 </a>
                 {isGuest && (
@@ -726,12 +772,20 @@ export function PublicEntityExperience({
               </div>
             )
           ) : (
-            <a className="pl-button pl-button-primary" href={colabHref}>
+            <a
+              className="pl-button tautin-collaboration-primary-action tw:w-full tw:text-center tw:flex tw:items-center tw:justify-center"
+              href={colabHref}
+            >
               {scope === "opportunities" ? "Ajukan kontribusi" : "Mulai kolaborasi"}
             </a>
           )}
 
-          <a className="pl-button pl-button-secondary" href={`/search?scope=${scope}`}>Lihat yang serupa</a>
+          <a
+            className="pl-button pl-button-secondary tw:w-full tw:text-center tw:flex tw:items-center tw:justify-center"
+            href={`/search?scope=${scope}`}
+          >
+            Lihat yang serupa
+          </a>
         </aside>
       </div>
     </div>
@@ -762,19 +816,26 @@ const initialOrgState: OrgState = {
 
 export function OrganizationWorkspaceExperience({ section }: { section: string }) {
   const searchParams = useSearchParams();
+  const replaceQuery = useReplaceQuery();
+  const [localSelected, setLocalSelected] = useState<string | null>(searchParams.get("selected"));
+
+  useEffect(() => {
+    setLocalSelected(searchParams.get("selected"));
+  }, [searchParams]);
+
   const [orgState, setOrgState] = usePrototypeSession<OrgState>("projectlink-org-state", initialOrgState);
   const scope = searchParams.get("scope");
   const q = searchParams.get("q") ?? "";
-  const selected = searchParams.get("selected");
-  const [mobilePanel, setMobilePanel] = useState<"filters" | "results" | "detail">(selected ? "detail" : "results");
+  const [mobilePanel, setMobilePanel] = useState<"filters" | "results" | "detail">(localSelected ? "detail" : "results");
+
   const updateOrg = (patch: Partial<OrgState>, message?: string) => {
     setOrgState({ ...orgState, ...patch });
     if (message) announce(message);
   };
 
   useEffect(() => {
-    if (selected) setMobilePanel("detail");
-  }, [selected]);
+    if (localSelected) setMobilePanel("detail");
+  }, [localSelected]);
 
   if (section === "search") {
     if (scope !== "talent" && scope !== "projects") {
@@ -795,7 +856,7 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
       .filter((item) => !searchParams.get("field") || item.field === searchParams.get("field"))
       .filter((item) => scope !== "talent" || !searchParams.get("availability") || item.availability === searchParams.get("availability"))
       .filter((item) => scope !== "projects" || !searchParams.get("readiness") || item.readiness === searchParams.get("readiness"));
-    const selectedItem = results.find((item) => item.slug === selected) ?? results[0];
+    const selectedItem = results.find((item) => item.slug === localSelected) ?? results[0];
     return (
       <div className="px-org-search">
         <header className="px-search-heading"><div><p className="pl-eyebrow">Nexa Research Lab · {scope === "talent" ? "Cari talent" : "Cari proyek"}</p><h1>Bandingkan alasan, evidence, dan gap sebelum bertindak.</h1></div><a className="pl-button pl-button-secondary" href="/organization/nexa-research-lab/shortlists">Shared shortlists ({orgState.shortlists.length})</a></header>
@@ -820,7 +881,7 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
             {results.map((item) => {
               const next = new URLSearchParams(searchParams.toString());
               next.set("selected", item.slug);
-              return <a className={`px-result-card${selectedItem?.slug === item.slug ? " selected" : ""}`} href={`/organization/nexa-research-lab/search?${next}`} key={item.id}><div className="px-result-icon"><IconForScope scope={item.scope} /></div><div className="px-result-copy"><h3>{item.title}</h3><p>{item.owner}</p><div className="px-result-reason"><Sparkle size={15} />{item.reasons[0]}</div></div><ArrowRight size={17} /></a>;
+              return <a className={`px-result-card${localSelected === item.slug ? " selected" : ""}`} href={`/organization/nexa-research-lab/search?${next}`} onClick={(e) => { e.preventDefault(); setLocalSelected(item.slug); replaceQuery(next); }} key={item.id}><div className="px-result-icon"><IconForScope scope={item.scope} /></div><div className="px-result-copy"><h3>{item.title}</h3><p>{item.owner}</p><div className="px-result-reason"><Sparkle size={15} />{item.reasons[0]}</div></div><ArrowRight size={17} /></a>;
             })}
           </section>
           {selectedItem ? (

@@ -4115,3 +4115,15 @@
   }
 }
 
+/* Scoped override for public action CTA */
+.tautin-collaboration-primary-action {
+  background-color: #075ff7 !important;
+  color: #ffffff !important;
+  border-color: #075ff7 !important;
+}
+
+.tautin-collaboration-primary-action:hover {
+  background-color: #004cd6 !important;
+  border-color: #004cd6 !important;
+}
+
