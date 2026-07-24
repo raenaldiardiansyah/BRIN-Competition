@@ -7,6 +7,7 @@ import {
   Bell,
   Buildings,
   Compass,
+  Faders,
   FolderOpen,
   Handshake,
   House,
@@ -16,6 +17,7 @@ import {
   SquaresFour,
   UserCircle,
   UsersThree,
+  X,
 } from "@phosphor-icons/react";
 import {
   DesignSystemPreview,
@@ -29,7 +31,7 @@ import {
   OrganizationWorkspaceExperience,
   PublicEntityExperience,
 } from "./product-experiences";
-import type { SearchScope } from "@/dummy/registry";
+import { scopeConfig, filterLabels, filterOptions, getFilterOptionsForScope, type SearchScope } from "@/dummy/registry";
 import type { SubscriptionPlan, SubscriptionSessionOverride } from "@/types/domain/subscription";
 import { GlobalStatusAnnouncer } from "./accessibility";
 import { SubscriptionPage } from "../subscription/subscription-page";
@@ -1952,6 +1954,241 @@ function NavIcon({ label, scope }: { label: string; scope?: PublicSearchScope })
   return <Icon size={19} weight="duotone" aria-hidden="true" />;
 }
 
+function NavbarSearchControl({
+  currentScope,
+  orgContext,
+}: {
+  currentScope?: SearchScope;
+  orgContext?: boolean;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [showFilterPopover, setShowFilterPopover] = useState(false);
+
+  const scope = (searchParams.get("scope") as SearchScope | null) ?? currentScope ?? "projects";
+  const q = searchParams.get("q") ?? "";
+  const sort = searchParams.get("sort") ?? "relevance";
+
+  const activeScopeConfig = scopeConfig[scope] ?? scopeConfig.projects;
+  const dynamicFilterOptions = getFilterOptionsForScope(scope);
+
+  const activeFilterCount = activeScopeConfig.filters.filter(
+    (key) => Boolean(searchParams.get(key))
+  ).length + (searchParams.get("organization") ? 1 : 0);
+
+  const updateSearch = (params: Record<string, string | null>, options?: { resetSelected?: boolean }) => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (!next.has("scope")) next.set("scope", scope);
+
+    Object.entries(params).forEach(([key, val]) => {
+      if (val) {
+        next.set(key, val);
+      } else {
+        next.delete(key);
+      }
+    });
+
+    if (options?.resetSelected !== false) {
+      next.delete("selected");
+    }
+
+    const targetPath = pathname.includes("/search") ? pathname : "/search";
+    router.replace(`${targetPath}?${next.toString()}`, { scroll: false });
+  };
+
+  const handleScopeChange = (nextScope: SearchScope) => {
+    const next = new URLSearchParams();
+    next.set("scope", nextScope);
+    if (q) next.set("q", q);
+    if (orgContext) next.set("organization", "nexa-research-lab");
+    const targetPath = pathname.includes("/search") ? pathname : "/search";
+    router.replace(`${targetPath}?${next.toString()}`, { scroll: false });
+  };
+
+  const handleResetFilters = () => {
+    const next = new URLSearchParams();
+    next.set("scope", scope);
+    if (q) next.set("q", q);
+    if (orgContext) next.set("organization", "nexa-research-lab");
+    const targetPath = pathname.includes("/search") ? pathname : "/search";
+    router.replace(`${targetPath}?${next.toString()}`, { scroll: false });
+    setShowFilterPopover(false);
+  };
+
+  return (
+    <>
+      <Link className="search-back" href="/explore" aria-label="Kembali ke navigasi utama">←</Link>
+      <label className="search-category">
+        <span className="sr-only">Kategori pencarian</span>
+        <select
+          value={scope}
+          onChange={(e) => handleScopeChange(e.target.value as SearchScope)}
+          aria-label="Pilih scope pencarian"
+        >
+          {Object.keys(scopeConfig).map((key) => (
+            <option value={key} key={key}>
+              {scopeConfig[key as SearchScope].label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="navbar-search-form" style={{ position: "relative", gap: "4px" }}>
+        {(orgContext || searchParams.get("organization")) && (
+          <span style={{ padding: "2px 6px", fontSize: "0.72rem", background: "#eef5ff", color: "#075ff7", borderRadius: "4px", alignSelf: "center", whiteSpace: "nowrap" }}>
+            Nexa Lab
+          </span>
+        )}
+        <label className="navbar-search-input" style={{ flex: 1 }}>
+          <span className="sr-only">Kata kunci pencarian</span>
+          <input
+            value={q}
+            onChange={(e) => updateSearch({ q: e.target.value || null })}
+            placeholder={activeScopeConfig.queryPlaceholder}
+            aria-label="Cari kata kunci"
+          />
+        </label>
+
+        {q && (
+          <button
+            type="button"
+            className="button ghost"
+            onClick={() => updateSearch({ q: null })}
+            aria-label="Hapus kata kunci"
+            style={{ padding: "4px 8px", border: 0 }}
+          >
+            <X size={16} />
+          </button>
+        )}
+
+        <button
+          type="button"
+          className={`navbar-filter-toggle-btn ${activeFilterCount > 0 ? "active" : ""}`}
+          onClick={() => setShowFilterPopover(!showFilterPopover)}
+          aria-label="Buka filter pencarian"
+          aria-expanded={showFilterPopover}
+        >
+          <Faders size={18} />
+          <span>Filter</span>
+          {activeFilterCount > 0 && (
+            <span style={{ background: "#075ff7", color: "#fff", borderRadius: "99px", padding: "1px 6px", fontSize: "0.7rem" }}>
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+
+        {showFilterPopover && (
+          <div
+            className="tautin-navbar-filter-popover"
+            style={{
+              position: "absolute",
+              top: "100%",
+              right: 0,
+              marginTop: "8px",
+              width: "330px",
+              maxHeight: "75vh",
+              overflowY: "auto",
+              background: "#ffffff",
+              border: "1px solid #dce8fb",
+              borderRadius: "12px",
+              boxShadow: "0 10px 30px rgba(15, 28, 39, 0.15)",
+              padding: "16px",
+              zIndex: 1000,
+            }}
+            role="dialog"
+            aria-label="Panel Filter Navbar"
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", borderBottom: "1px solid #eef5ff", paddingBottom: "8px" }}>
+              <strong style={{ fontSize: "0.95rem" }}>Filter ({activeScopeConfig.label})</strong>
+              <button
+                type="button"
+                className="button ghost"
+                onClick={() => setShowFilterPopover(false)}
+                aria-label="Tutup filter"
+                style={{ padding: "4px" }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gap: "12px" }}>
+              {activeScopeConfig.filters.map((filterKey) => {
+                const options = dynamicFilterOptions[filterKey] ?? filterOptions[filterKey] ?? [];
+                return (
+                  <label key={filterKey} style={{ display: "grid", gap: "4px", fontSize: "0.82rem", fontWeight: 600 }}>
+                    <span>{filterLabels[filterKey]}</span>
+                    <select
+                      value={searchParams.get(filterKey) ?? ""}
+                      onChange={(e) => updateSearch({ [filterKey]: e.target.value || null })}
+                      style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #dce8fb" }}
+                    >
+                      <option value="">Semua</option>
+                      {options.map((opt) => {
+                        let label = opt;
+                        if (filterKey === "deadlineRange") {
+                          if (opt === "7_DAYS") label = "≤ 7 Hari (s.d. 31 Jul)";
+                          else if (opt === "30_DAYS") label = "≤ 30 Hari (s.d. 23 Agt)";
+                          else if (opt === "OVER_30_DAYS") label = "> 30 Hari";
+                        }
+                        if (filterKey === "ownership") {
+                          if (opt === "all") label = "Semua (Internal & Eksternal)";
+                          else if (opt === "internal") label = "Internal Organisasi";
+                          else if (opt === "external") label = "Ekstrak & Mitra";
+                        }
+                        return (
+                          <option key={opt} value={opt}>
+                            {label}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                );
+              })}
+
+              <label style={{ display: "grid", gap: "4px", fontSize: "0.82rem", fontWeight: 600 }}>
+                <span>Urutkan</span>
+                <select
+                  value={sort}
+                  onChange={(e) => updateSearch({ sort: e.target.value === "relevance" ? null : e.target.value }, { resetSelected: false })}
+                  style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #dce8fb" }}
+                >
+                  <option value="relevance">Paling Relevan</option>
+                  <option value="recent">Terbaru</option>
+                  <option value="readiness">Kesiapan Proyek</option>
+                  <option value="evidence">Evidence Terbanyak</option>
+                  <option value="projects">Jumlah Proyek</option>
+                  <option value="deadline">Deadline Terdekat</option>
+                </select>
+              </label>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px", paddingTop: "12px", borderTop: "1px solid #eef5ff" }}>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={handleResetFilters}
+                style={{ fontSize: "0.8rem", padding: "6px 12px" }}
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                className="button primary pl-action-primary"
+                onClick={() => setShowFilterPopover(false)}
+                style={{ fontSize: "0.8rem", padding: "6px 12px" }}
+              >
+                Terapkan
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 function AppShell({
   children,
   pathname,
@@ -1989,9 +2226,8 @@ function AppShell({
         ["/organization/nusantara/members", "Anggota"],
       ]
     : [["/home", "Beranda"], ["/discovery", "Jelajahi"], ["/my-projects", "Proyek"], ["/collaboration", "Kolaborasi"], ["/ai", "AI"], ["/notifications", "Notifikasi"], ["/me", "Profil"]];
-  const contextualSearch = isPublic && pathname === "/search" && searchScope
-    ? publicSearchConfig[searchScope]
-    : null;
+  const isSearchPagename = pathname === "/search" || pathname.includes("/search");
+  const contextualSearch = (isPublic && isSearchPagename) || (orgContext && isSearchPagename) || isSearchPagename;
 
   return (
     <div
@@ -2012,52 +2248,8 @@ function AppShell({
         <Link className="brand" href={isPublic ? "/" : orgContext ? "/organization/nusantara" : "/home"}>
           <img src="/Long TAUUTIN.png" alt="TautIn" style={{ height: '42px', width: 'auto', objectFit: 'contain' }} />
         </Link>
-        {contextualSearch && searchScope ? (
-          <>
-            <Link className="search-back" href="/explore" aria-label="Kembali ke navigasi utama">←</Link>
-            <label className="search-category">
-              <span className="nav-icon"><NavIcon label={contextualSearch.label} scope={searchScope} /></span>
-              <span className="sr-only">Kategori pencarian</span>
-              <select
-                value={searchScope}
-                onChange={(event) =>
-                  window.location.assign(`/search?scope=${event.target.value}`)
-                }
-              >
-                {Object.entries(publicSearchConfig).map(([value, item]) => (
-                  <option value={value} key={value}>{item.label}</option>
-                ))}
-              </select>
-            </label>
-            <form
-              className="navbar-search-form"
-              action="/search"
-              method="get"
-              aria-label={`Pencarian ${contextualSearch.label}`}
-            >
-              <input type="hidden" name="scope" value={searchScope} />
-              <label className="navbar-search-input">
-                <span className="sr-only">Kata kunci pencarian</span>
-                <input
-                  name="q"
-                  defaultValue={searchQuery}
-                  placeholder={contextualSearch.placeholder}
-                />
-              </label>
-              <div className="navbar-filter-row">
-                {contextualSearch.filters.map((filter) => (
-                  <label className="navbar-filter" key={filter}>
-                    <span className="sr-only">{filter}</span>
-                    <select name={filter.toLowerCase()}>
-                      <option value="">{filter}</option>
-                      <option value="all">All {filter.toLowerCase()}</option>
-                    </select>
-                  </label>
-                ))}
-              </div>
-              <button className="navbar-search-button" type="submit" aria-label="Jalankan pencarian">⌕</button>
-            </form>
-          </>
+        {contextualSearch ? (
+          <NavbarSearchControl currentScope={searchScope} orgContext={orgContext} />
         ) : (
           <nav className="primary-nav" aria-label="Navigasi utama">
             {isPublic

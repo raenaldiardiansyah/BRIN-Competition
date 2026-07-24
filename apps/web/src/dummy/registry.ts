@@ -11,7 +11,7 @@ function projectSearchProjection(project: (typeof dummyProjects)[number]): Searc
     owner: organization?.displayName ?? "Unknown",
     summary: project.problem,
     field: "Environmental Data",
-    location: project.location ?? "",
+    location: project.location ?? "Bandung",
     status: project.lifecycle,
     readiness: project.readiness,
     verification: `Status ${project.readinessSource}`,
@@ -19,10 +19,18 @@ function projectSearchProjection(project: (typeof dummyProjects)[number]): Searc
     reasons: ["Masalah dan teknologi relevan", "Evidence publik tersedia"],
     gaps: ["Membutuhkan validasi di lokasi kedua"],
     href: `/projects/${project.slug}`,
+    technologies: ["IoT Sensors", "Data Pipeline", "Python"],
+    collaborationNeeds: ["Embedded Systems Contributor", "Data Engineer"],
+    workMode: project.mode === "Hybrid" ? "HYBRID" : "REMOTE",
+    organizationId: project.organizationId,
+    evidenceCount: project.evidenceSummary.total,
+    updatedAt: "2026-07-15",
   };
 }
 
 const aquaLoopProject = dummyProjects.find((p) => p.slug === "aqua-loop")!;
+
+export const PROTOTYPE_REFERENCE_DATE = "2026-07-24";
 
 export type SearchScope =
   | "projects"
@@ -48,6 +56,24 @@ export type SearchItem = {
   reasons: string[];
   gaps: string[];
   href: string;
+  skills?: string[];
+  technologies?: string[];
+  profileType?: string;
+  experienceLevel?: string;
+  organizationType?: string;
+  organizationSize?: string;
+  acceptsCollaboration?: boolean;
+  opportunityType?: string;
+  requiredSkills?: string[];
+  collaborationNeeds?: string[];
+  workMode?: "REMOTE" | "ON_SITE" | "HYBRID";
+  evidenceCount?: number;
+  projectCount?: number;
+  activeOpportunityCount?: number;
+  deadline?: string;
+  daysUntilDeadline?: number;
+  updatedAt?: string;
+  organizationId?: string;
 };
 
 export const searchItems: SearchItem[] = [
@@ -68,6 +94,12 @@ export const searchItems: SearchItem[] = [
     reasons: ["Kebutuhan computer vision dan sensor", "Terbuka untuk pilot"],
     gaps: ["Dataset produksi belum tersedia"],
     href: "/projects/industrial-motor-monitoring",
+    technologies: ["Vibration Sensors", "Python", "TensorFlow"],
+    collaborationNeeds: ["Signal Classifier Contributor", "Computer Vision Researcher"],
+    workMode: "REMOTE",
+    organizationId: "nexa-research-lab",
+    evidenceCount: 2,
+    updatedAt: "2026-07-20",
   },
   {
     id: "project-smart-cooling",
@@ -85,6 +117,81 @@ export const searchItems: SearchItem[] = [
     reasons: ["Mencari kolaborator embedded", "Pengujian aktif"],
     gaps: ["Belum ada data konsumsi satu musim"],
     href: "/projects/smart-cooling",
+    technologies: ["LoRaWAN", "ESP32", "Thermal Sensors"],
+    collaborationNeeds: ["Firmware Engineer", "IoT Specialist"],
+    workMode: "ON_SITE",
+    organizationId: "arunika-innovation-hub",
+    evidenceCount: 1,
+    updatedAt: "2026-07-18",
+  },
+  {
+    id: "project-climate-microgrid",
+    slug: "climate-microgrid",
+    scope: "projects",
+    title: "Solar Microgrid & Energy Analytics",
+    owner: "Nexa Research Lab",
+    summary: "Monitoring efisiensi panel surya dan penyimpanan baterai skala komunitas.",
+    field: "Climate Technology",
+    location: "Bandung",
+    status: "ACTIVE",
+    readiness: "PILOT",
+    verification: "Pilot aktif dengan 12 sensor terpasang",
+    evidence: ["Telemetry dashboard log", "Grid stability benchmark"],
+    reasons: ["Kebutuhan IoT dan analytics", "Terbuka untuk riset gabungan"],
+    gaps: ["Kalibrasi sensor arus frekuensi tinggi"],
+    href: "/projects/industrial-motor-monitoring",
+    technologies: ["IoT", "Python", "Thermal Sensors", "PostgreSQL"],
+    collaborationNeeds: ["Data Engineer", "IoT Specialist"],
+    workMode: "HYBRID",
+    organizationId: "nexa-research-lab",
+    evidenceCount: 3,
+    updatedAt: "2026-07-23",
+  },
+  {
+    id: "project-forest-fire-detection",
+    slug: "forest-fire-detection",
+    scope: "projects",
+    title: "Early Forest Fire Detection Satellite AI",
+    owner: "Nusantara Labs",
+    summary: "Deteksi titik panas dan asap hutan menggunakan citra satelit realtime.",
+    field: "Computer Vision",
+    location: "Jakarta",
+    status: "ACTIVE",
+    readiness: "RESEARCH",
+    verification: "Dataset dan model divalidasi peneliti",
+    evidence: ["Thermal anomaly benchmark", "Satellite dataset"],
+    reasons: ["Membutuhkan peneliti vision dan geospatial"],
+    gaps: ["Resolusi citra waktu malam masih terbatas"],
+    href: "/projects/industrial-motor-monitoring",
+    technologies: ["PyTorch", "OpenCV", "PostgreSQL", "Geospatial"],
+    collaborationNeeds: ["Computer Vision Researcher"],
+    workMode: "REMOTE",
+    organizationId: "nusantara-labs",
+    evidenceCount: 2,
+    updatedAt: "2026-07-21",
+  },
+  {
+    id: "project-urban-flood-sensor",
+    slug: "urban-flood-sensor",
+    scope: "projects",
+    title: "Urban Flood Early Warning Network",
+    owner: "Arunika Innovation Hub",
+    summary: "Jaringan sensor ketinggian air dan curah hujan berbasis LoRaWAN.",
+    field: "Urban Systems",
+    location: "Surabaya",
+    status: "ACTIVE",
+    readiness: "TESTING",
+    verification: "Pengujian jaringan dikonfirmasi pemerintah kota",
+    evidence: ["Sensor telemetry report"],
+    reasons: ["Integrasi hardware dan telemetry"],
+    gaps: ["Daya tahan baterai saat banjir bandang"],
+    href: "/projects/smart-cooling",
+    technologies: ["LoRaWAN", "ESP32", "Data Pipeline"],
+    collaborationNeeds: ["Embedded Systems Engineer", "Data Pipeline"],
+    workMode: "ON_SITE",
+    organizationId: "arunika-innovation-hub",
+    evidenceCount: 2,
+    updatedAt: "2026-07-19",
   },
   {
     id: "person-maya",
@@ -102,6 +209,13 @@ export const searchItems: SearchItem[] = [
     reasons: ["3 kebutuhan proyek cocok", "Tersedia 8 jam/minggu"],
     gaps: ["Belum memiliki evidence deployment skala produksi"],
     href: "/profiles/maya-pradipta",
+    profileType: "Data Engineer",
+    skills: ["Python", "Spark", "PostgreSQL", "Data Pipeline"],
+    experienceLevel: "Senior",
+    organizationId: "nexa-research-lab",
+    evidenceCount: 3,
+    projectCount: 2,
+    updatedAt: "2026-07-22",
   },
   {
     id: "person-nadia",
@@ -119,6 +233,13 @@ export const searchItems: SearchItem[] = [
     reasons: ["Keahlian computer vision cocok", "Pernah mengerjakan inspeksi"],
     gaps: ["Ketersediaan setelah September"],
     href: "/profiles/nadia-putri",
+    profileType: "Computer Vision Researcher",
+    skills: ["PyTorch", "OpenCV", "Thermal Imaging"],
+    experienceLevel: "Lead",
+    organizationId: "nusantara-labs",
+    evidenceCount: 2,
+    projectCount: 3,
+    updatedAt: "2026-07-21",
   },
   {
     id: "person-arya",
@@ -136,6 +257,61 @@ export const searchItems: SearchItem[] = [
     reasons: ["Kebutuhan embedded cocok"],
     gaps: ["Availability tidak dipublikasikan"],
     href: "/profiles/arya-santoso",
+    profileType: "Embedded Systems Engineer",
+    skills: ["C/C++", "FreeRTOS", "Circuit Design"],
+    experienceLevel: "Mid",
+    organizationId: "arunika-innovation-hub",
+    evidenceCount: 1,
+    projectCount: 1,
+    updatedAt: "2026-07-15",
+  },
+  {
+    id: "person-budi",
+    slug: "budi-pratama",
+    scope: "people",
+    title: "Budi Pratama",
+    owner: "IoT & Hardware Lead",
+    summary: "Spesialis sensor nirkabel, LoRaWAN, dan riset perangkat keras.",
+    field: "IoT",
+    location: "Yogyakarta",
+    status: "AVAILABLE",
+    availability: "AVAILABLE",
+    verification: "4 kontribusi hardware dikonfirmasi",
+    evidence: ["LoRaWAN gateway node", "Hardware test log"],
+    reasons: ["Tersedia untuk pilot rantai dingin dan banjir"],
+    gaps: ["Terbatas untuk proyek luar kota"],
+    href: "/profiles/arya-santoso",
+    profileType: "Embedded Systems Engineer",
+    skills: ["FreeRTOS", "C/C++", "LoRaWAN", "ESP32"],
+    experienceLevel: "Lead",
+    organizationId: "arunika-innovation-hub",
+    evidenceCount: 4,
+    projectCount: 4,
+    updatedAt: "2026-07-23",
+  },
+  {
+    id: "person-siti",
+    slug: "siti-rahmawati",
+    scope: "people",
+    title: "Siti Rahmawati",
+    owner: "Senior Geospatial Analyst",
+    summary: "Pemetaan spasial, pemodelan iklim perkotaan, dan analisis GIS.",
+    field: "Geospatial",
+    location: "Bandung",
+    status: "AVAILABLE",
+    availability: "AVAILABLE",
+    verification: "Terverifikasi oleh Nexa Research Lab",
+    evidence: ["Urban Heat Map dataset", "GIS Pipeline"],
+    reasons: ["Keahlian pemetaan iklim sesuai"],
+    gaps: ["Hanya tersedia remote"],
+    href: "/profiles/maya-pradipta",
+    profileType: "Data Engineer",
+    skills: ["Python", "Geospatial", "Data Pipeline", "PostgreSQL"],
+    experienceLevel: "Senior",
+    organizationId: "nexa-research-lab",
+    evidenceCount: 3,
+    projectCount: 2,
+    updatedAt: "2026-07-20",
   },
   {
     id: "org-nexa",
@@ -152,6 +328,13 @@ export const searchItems: SearchItem[] = [
     reasons: ["Bidang dan lokasi sesuai", "Memiliki peluang terbuka"],
     gaps: ["Beberapa outcome masih self-reported"],
     href: "/organizations/nexa-research-lab",
+    organizationType: "Applied Research",
+    organizationSize: "50-200",
+    acceptsCollaboration: true,
+    organizationId: "nexa-research-lab",
+    projectCount: 4,
+    activeOpportunityCount: 2,
+    updatedAt: "2026-07-23",
   },
   {
     id: "org-nusantara",
@@ -168,6 +351,13 @@ export const searchItems: SearchItem[] = [
     reasons: ["Bidang urban systems relevan"],
     gaps: ["Tidak ada peluang aktif"],
     href: "/organizations/nusantara-labs",
+    organizationType: "Research Partner",
+    organizationSize: "10-50",
+    acceptsCollaboration: true,
+    organizationId: "nusantara-labs",
+    projectCount: 2,
+    activeOpportunityCount: 1,
+    updatedAt: "2026-07-19",
   },
   {
     id: "org-arunika",
@@ -184,6 +374,36 @@ export const searchItems: SearchItem[] = [
     reasons: ["Memiliki jaringan pilot"],
     gaps: ["Identitas organisasi belum selesai diverifikasi"],
     href: "/organizations/arunika-innovation-hub",
+    organizationType: "Innovation Hub",
+    organizationSize: "200+",
+    acceptsCollaboration: false,
+    organizationId: "arunika-innovation-hub",
+    projectCount: 1,
+    activeOpportunityCount: 0,
+    updatedAt: "2026-07-10",
+  },
+  {
+    id: "org-agri",
+    slug: "agri-nexus",
+    scope: "organizations",
+    title: "Agri Nexus",
+    owner: "Agritech Innovation Lab",
+    summary: "Pengembangan rantai dingin hemat energi dan IoT pertanian.",
+    field: "IoT",
+    location: "Yogyakarta",
+    status: "CONFIRMED",
+    verification: "Identitas organisasi dikonfirmasi mitra",
+    evidence: ["3 proyek pilot aktif"],
+    reasons: ["Pionir cold chain komunitas"],
+    gaps: ["Kapasitas tim laboratorium terbatas"],
+    href: "/organizations/arunika-innovation-hub",
+    organizationType: "Applied Research",
+    organizationSize: "10-50",
+    acceptsCollaboration: true,
+    organizationId: "agri-nexus",
+    projectCount: 3,
+    activeOpportunityCount: 2,
+    updatedAt: "2026-07-21",
   },
   {
     id: "opp-urban-heat",
@@ -201,6 +421,37 @@ export const searchItems: SearchItem[] = [
     reasons: ["Terbuka untuk data engineer", "Scope kontribusi jelas"],
     gaps: ["Honorarium masih dalam finalisasi"],
     href: "/opportunities/urban-heat-mapping",
+    opportunityType: "Research Collaboration",
+    requiredSkills: ["Data Pipeline", "Geospatial", "Python"],
+    workMode: "HYBRID",
+    deadline: "2026-07-28",
+    daysUntilDeadline: 4,
+    organizationId: "nexa-research-lab",
+    updatedAt: "2026-07-22",
+  },
+  {
+    id: "opp-fire-detection",
+    slug: "fire-detection-collaboration",
+    scope: "opportunities",
+    title: "Satellite Image Classifier for Wildfire Prevention",
+    owner: "Nusantara Labs",
+    summary: "Kontribusi riset model computer vision untuk citra satelit termal.",
+    field: "Computer Vision",
+    location: "Jakarta",
+    status: "OPEN",
+    commitment: "5 jam/minggu",
+    verification: "Peluang riset terverifikasi",
+    evidence: ["Satellite Dataset v2"],
+    reasons: ["Kebutuhan riset vision jelas"],
+    gaps: ["Waktu pengerjaan fleksibel"],
+    href: "/opportunities/urban-heat-mapping",
+    opportunityType: "Research Collaboration",
+    requiredSkills: ["PyTorch", "OpenCV", "Python"],
+    workMode: "REMOTE",
+    deadline: "2026-07-30",
+    daysUntilDeadline: 6,
+    organizationId: "nusantara-labs",
+    updatedAt: "2026-07-22",
   },
   {
     id: "opp-embedded",
@@ -218,6 +469,37 @@ export const searchItems: SearchItem[] = [
     reasons: ["Output dan durasi jelas"],
     gaps: ["Kompensasi belum dipublikasikan"],
     href: "/opportunities/embedded-engineer-pilot",
+    opportunityType: "Sensor Pilot",
+    requiredSkills: ["Firmware", "C/C++", "FreeRTOS"],
+    workMode: "ON_SITE",
+    deadline: "2026-08-15",
+    daysUntilDeadline: 22,
+    organizationId: "arunika-innovation-hub",
+    updatedAt: "2026-07-20",
+  },
+  {
+    id: "opp-microgrid-pilot",
+    slug: "microgrid-pilot-collaboration",
+    scope: "opportunities",
+    title: "Solar Energy Analytics Firmware Engineer",
+    owner: "Nexa Research Lab",
+    summary: "Peluang pengujian sensor daya dan efisiensi microgrid surya.",
+    field: "Climate Technology",
+    location: "Bandung",
+    status: "OPEN",
+    commitment: "3 minggu pilot",
+    verification: "Peluang dikonfirmasi Nexa Lab",
+    evidence: ["Microgrid spec sheet"],
+    reasons: ["Kebutuhan sensor daya"],
+    gaps: ["Diutamakan domisili Bandung/sekitarnya"],
+    href: "/opportunities/embedded-engineer-pilot",
+    opportunityType: "Sensor Pilot",
+    requiredSkills: ["IoT", "FreeRTOS", "C/C++"],
+    workMode: "HYBRID",
+    deadline: "2026-08-05",
+    daysUntilDeadline: 12,
+    organizationId: "nexa-research-lab",
+    updatedAt: "2026-07-23",
   },
   {
     id: "opp-railway",
@@ -235,6 +517,13 @@ export const searchItems: SearchItem[] = [
     reasons: ["Tersimpan sebagai referensi bidang"],
     gaps: ["Tidak lagi menerima aplikasi"],
     href: "/opportunities/railway-sensor-collaboration",
+    opportunityType: "Analysis",
+    requiredSkills: ["Vibration Sensors", "Signal Processing", "Python"],
+    workMode: "REMOTE",
+    deadline: "2026-09-30",
+    daysUntilDeadline: 68,
+    organizationId: "nusantara-labs",
+    updatedAt: "2026-06-30",
   },
 ];
 
@@ -242,26 +531,26 @@ export const scopeConfig = {
   projects: {
     label: "Proyek",
     queryPlaceholder: "Cari proyek, teknologi, masalah, atau bidang",
-    filters: ["field", "readiness"] as const,
-    sorts: ["relevance", "recent", "readiness"] as const,
+    filters: ["field", "readiness", "location", "technology", "lifecycle", "need", "workMode", "ownership"] as const,
+    sorts: ["relevance", "recent", "readiness", "evidence"] as const,
   },
   people: {
     label: "Orang",
-    queryPlaceholder: "Cari nama, expertise, peran, atau institusi",
-    filters: ["field", "availability", "location"] as const,
-    sorts: ["relevance", "availability", "recent"] as const,
+    queryPlaceholder: "Cari nama, keahlian, peran, atau institusi",
+    filters: ["field", "availability", "location", "profileType", "skill", "experience", "ownership"] as const,
+    sorts: ["relevance", "evidence", "projects", "recent"] as const,
   },
   organizations: {
     label: "Organisasi",
     queryPlaceholder: "Cari nama, fokus, sektor, atau lokasi",
-    filters: ["field", "location"] as const,
-    sorts: ["relevance", "recent"] as const,
+    filters: ["field", "location", "organizationType", "size", "acceptsCollab", "ownership"] as const,
+    sorts: ["relevance", "projects", "opportunities", "recent"] as const,
   },
   opportunities: {
     label: "Peluang",
     queryPlaceholder: "Cari peran, bidang, proyek, atau organisasi",
-    filters: ["field", "location", "status"] as const,
-    sorts: ["relevance", "recent", "deadline"] as const,
+    filters: ["field", "location", "status", "opportunityType", "requiredSkill", "workMode", "deadlineRange", "ownership"] as const,
+    sorts: ["relevance", "deadline", "recent"] as const,
   },
 } satisfies Record<SearchScope, {
   label: string;
@@ -276,15 +565,93 @@ export const filterLabels: Record<string, string> = {
   availability: "Ketersediaan",
   location: "Lokasi",
   status: "Status",
+  profileType: "Peran / Tipe Profil",
+  organizationType: "Tipe Organisasi",
+  opportunityType: "Tipe Peluang",
+  skill: "Keahlian (Skill)",
+  experience: "Tingkat Pengalaman",
+  technology: "Teknologi",
+  lifecycle: "Lifecycle Status",
+  need: "Kebutuhan Kolaborasi",
+  workMode: "Mode Kerja",
+  size: "Ukuran Organisasi",
+  acceptsCollab: "Menerima Kolaborasi",
+  requiredSkill: "Skill Dibutuhkan",
+  deadlineRange: "Tenggat Waktu",
+  organization: "Konteks Organisasi",
+  ownership: "Entitas Kepemilikan",
 };
 
 export const filterOptions: Record<string, string[]> = {
-  field: ["Environmental Data", "Predictive Maintenance", "Computer Vision", "IoT", "Climate Technology", "Geospatial"],
+  field: ["Environmental Data", "Predictive Maintenance", "Computer Vision", "IoT", "Climate Technology", "Geospatial", "Urban Systems", "Innovation"],
   readiness: ["RESEARCH", "PROTOTYPE", "TESTING", "PILOT", "IMPLEMENTED"],
   availability: ["AVAILABLE", "PRIVATE"],
   location: ["Bandung", "Jakarta", "Yogyakarta", "Surabaya"],
-  status: ["OPEN", "CLOSED"],
+  status: ["OPEN", "CLOSED", "ACTIVE", "CONFIRMED", "VERIFIED", "PENDING_VERIFICATION"],
+  profileType: ["Data Engineer", "Computer Vision Researcher", "Embedded Systems Engineer"],
+  organizationType: ["Applied Research", "Research Partner", "Innovation Hub"],
+  opportunityType: ["Research Collaboration", "Sensor Pilot", "Analysis"],
+  ownership: ["all", "internal", "external"],
 };
+
+function cleanStrings(items: (string | undefined)[]): string[] {
+  return Array.from(new Set(items.filter((item): item is string => Boolean(item)))).sort();
+}
+
+export function getFilterOptionsForScope(scope: SearchScope): Record<string, string[]> {
+  const scopeItems = searchItems.filter((item) => item.scope === scope);
+
+  if (scope === "people") {
+    return {
+      field: cleanStrings(scopeItems.map((i) => i.field)),
+      availability: cleanStrings(scopeItems.map((i) => i.availability)),
+      location: cleanStrings(scopeItems.map((i) => i.location)),
+      profileType: cleanStrings(scopeItems.map((i) => i.profileType)),
+      skill: cleanStrings(scopeItems.flatMap((i) => i.skills ?? [])),
+      experience: cleanStrings(scopeItems.map((i) => i.experienceLevel)),
+      ownership: ["all", "internal", "external"],
+    };
+  }
+
+  if (scope === "projects") {
+    return {
+      field: cleanStrings(scopeItems.map((i) => i.field)),
+      readiness: cleanStrings(scopeItems.map((i) => i.readiness)),
+      location: cleanStrings(scopeItems.map((i) => i.location)),
+      technology: cleanStrings(scopeItems.flatMap((i) => i.technologies ?? [])),
+      lifecycle: cleanStrings(scopeItems.map((i) => i.status)),
+      need: cleanStrings(scopeItems.flatMap((i) => i.collaborationNeeds ?? [])),
+      workMode: cleanStrings(scopeItems.map((i) => i.workMode)),
+      ownership: ["all", "internal", "external"],
+    };
+  }
+
+  if (scope === "organizations") {
+    return {
+      field: cleanStrings(scopeItems.map((i) => i.field)),
+      location: cleanStrings(scopeItems.map((i) => i.location)),
+      organizationType: cleanStrings(scopeItems.map((i) => i.organizationType)),
+      size: cleanStrings(scopeItems.map((i) => i.organizationSize)),
+      acceptsCollab: ["Ya", "Tidak"],
+      ownership: ["all", "internal", "external"],
+    };
+  }
+
+  if (scope === "opportunities") {
+    return {
+      field: cleanStrings(scopeItems.map((i) => i.field)),
+      location: cleanStrings(scopeItems.map((i) => i.location)),
+      status: cleanStrings(scopeItems.map((i) => i.status)),
+      opportunityType: cleanStrings(scopeItems.map((i) => i.opportunityType)),
+      requiredSkill: cleanStrings(scopeItems.flatMap((i) => i.requiredSkills ?? [])),
+      workMode: cleanStrings(scopeItems.map((i) => i.workMode)),
+      deadlineRange: ["7_DAYS", "30_DAYS", "OVER_30_DAYS"],
+      ownership: ["all", "internal", "external"],
+    };
+  }
+
+  return {};
+}
 
 export const publicSlugs = {
   projects: ["aqua-loop", "industrial-motor-monitoring", "smart-cooling", "confidential-water-system"],

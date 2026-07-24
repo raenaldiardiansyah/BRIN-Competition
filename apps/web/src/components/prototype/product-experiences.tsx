@@ -28,6 +28,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import {
   filterLabels,
   filterOptions,
+  getFilterOptionsForScope,
   scopeConfig,
   searchItems,
   type SearchItem,
@@ -264,25 +265,115 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
     );
   }
   const activeConfig = scopeConfig[scope];
+  const dynamicFilterOptions = getFilterOptionsForScope(scope);
+  const [invalidFilterCleaned, setInvalidFilterCleaned] = useState(false);
 
-  const activeFilters = activeConfig.filters
-    .map((key) => [key, searchParams.get(key)] as const)
-    .filter(([, value]) => Boolean(value));
+  useEffect(() => {
+    const validMap = getFilterOptionsForScope(scope);
+    const toClean: string[] = [];
+
+    activeConfig.filters.forEach((filterKey) => {
+      const val = searchParams.get(filterKey);
+      if (val) {
+        const allowed = validMap[filterKey] ?? filterOptions[filterKey];
+        if (allowed && !allowed.includes(val)) {
+          toClean.push(filterKey);
+        }
+      }
+    });
+
+    if (toClean.length > 0) {
+      const next = new URLSearchParams(searchParams.toString());
+      toClean.forEach((k) => next.delete(k));
+      replaceQuery(next);
+      setInvalidFilterCleaned(true);
+      announce("Filter yang tidak dikenali telah dibersihkan.");
+    }
+  }, [scope, searchParams]);
+
+  const activeFilters: [string, string][] = [
+    ...activeConfig.filters
+      .map((key) => [key, searchParams.get(key)] as [string, string | null])
+      .filter((entry): entry is [string, string] => Boolean(entry[1])),
+    ...(searchParams.get("organization") ? [["organization", searchParams.get("organization")!] as [string, string]] : []),
+  ];
 
   const results = searchItems
     .filter((item) => item.scope === scope)
     .filter((item) => {
-      const haystack = `${item.title} ${item.owner} ${item.summary} ${item.field} ${item.location}`.toLowerCase();
-      return !q || haystack.includes(q.toLowerCase());
+      if (!q) return true;
+      const normalizedQ = q.trim().toLowerCase();
+      const haystack = [
+        item.title,
+        item.owner,
+        item.summary,
+        item.field,
+        item.location,
+        item.status,
+        ...(item.skills ?? []),
+        ...(item.technologies ?? []),
+        ...(item.reasons ?? []),
+      ].join(" ").toLowerCase();
+      return haystack.includes(normalizedQ);
     })
     .filter((item) => activeFilters.every(([key, value]) => {
       if (key === "field") return item.field === value;
       if (key === "readiness") return item.readiness === value;
       if (key === "availability") return item.availability === value;
       if (key === "location") return item.location === value;
-      if (key === "status") return item.status === value;
+      if (key === "status" || key === "lifecycle") return item.status === value;
+      if (key === "profileType") return item.profileType === value;
+      if (key === "organizationType") return item.organizationType === value;
+      if (key === "opportunityType") return item.opportunityType === value;
+      if (key === "skill") return item.skills?.includes(value);
+      if (key === "experience") return item.experienceLevel === value;
+      if (key === "technology") return item.technologies?.includes(value);
+      if (key === "need") return item.collaborationNeeds?.includes(value);
+      if (key === "workMode") return item.workMode === value;
+      if (key === "size") return item.organizationSize === value;
+      if (key === "acceptsCollab") return value === "Ya" ? item.acceptsCollaboration === true : item.acceptsCollaboration === false;
+      if (key === "requiredSkill") return item.requiredSkills?.includes(value);
+      if (key === "ownership") {
+        if (value === "internal") {
+          return (
+            (item.organizationId && item.organizationId.toLowerCase().includes("nexa")) ||
+            (item.owner && item.owner.toLowerCase().includes("nexa"))
+          );
+        }
+        if (value === "external") {
+          return (
+            (!item.organizationId || !item.organizationId.toLowerCase().includes("nexa")) &&
+            (!item.owner || !item.owner.toLowerCase().includes("nexa"))
+          );
+        }
+        return true;
+      }
+      if (key === "deadlineRange") {
+        const days = item.daysUntilDeadline;
+        if (days == null) return true;
+        if (value === "7_DAYS") return days <= 7;
+        if (value === "30_DAYS") return days <= 30;
+        if (value === "OVER_30_DAYS") return days > 30;
+        return true;
+      }
+      if (key === "organization") {
+        return true; // Discovery mode allows both internal & external
+      }
       return true;
-    }));
+    }))
+    .sort((a, b) => {
+      if (sort === "evidence") return (b.evidenceCount ?? b.evidence?.length ?? 0) - (a.evidenceCount ?? a.evidence?.length ?? 0);
+      if (sort === "projects") return (b.projectCount ?? 0) - (a.projectCount ?? 0);
+      if (sort === "opportunities") return (b.activeOpportunityCount ?? 0) - (a.activeOpportunityCount ?? 0);
+      if (sort === "readiness") {
+        const order: Record<string, number> = { IMPLEMENTED: 5, PILOT: 4, TESTING: 3, PROTOTYPE: 2, RESEARCH: 1 };
+        return (order[b.readiness ?? ""] ?? 0) - (order[a.readiness ?? ""] ?? 0);
+      }
+      if (sort === "recent") return (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "");
+      if (sort === "deadline") return (a.deadline ?? "").localeCompare(b.deadline ?? "");
+      return 0; // relevance
+    });
+
   const selectedItem = results.find((item) => item.slug === localSelected);
 
   const handleSelect = (slug: string) => {
@@ -322,6 +413,13 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
     replaceQuery(next);
   };
 
+  const resetAllFilters = () => {
+    const next = new URLSearchParams();
+    next.set("scope", scope);
+    setLocalSelected(null);
+    replaceQuery(next);
+  };
+
   const returnTo = `/search?${searchParams.toString()}`;
   const saveHref = `/login?returnTo=${encodeURIComponent(returnTo)}&action=save-search`;
 
@@ -331,7 +429,7 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
         <div>
           <p className="pl-eyebrow">Pencarian publik · {activeConfig.label}</p>
           <h1>Temukan {activeConfig.label.toLowerCase()} dengan konteks yang dapat diperiksa.</h1>
-          <p>Query, filter, urutan, dan pilihan tersimpan di URL.</p>
+          <p>Gunakan search bar pada Navbar di atas untuk mengubah pencarian, kriteria, dan filter.</p>
         </div>
         <a className="pl-button pl-button-secondary" href={saveHref}>Simpan pencarian</a>
       </header>
@@ -339,75 +437,39 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
         <div className="px-save-banner"><CheckCircle size={19} weight="fill" /> Pencarian tersimpan. Query dan filter tetap sama setelah autentikasi.</div>
       ) : null}
 
-      <form className="px-search-command px-public-search-command" action="/search" method="get">
-        <label>
-          <span>Scope</span>
-          <select value={scope} onChange={(event) => changeScope(event.target.value as SearchScope)}>
-            {(Object.keys(scopeConfig) as SearchScope[]).map((value) => <option value={value} key={value}>{scopeConfig[value].label}</option>)}
-          </select>
-        </label>
-        <input name="scope" type="hidden" value={scope} />
-        <label className="px-query-field">
-          <span>Kata kunci</span>
-          <span><MagnifyingGlass size={20} /><input defaultValue={q} name="q" placeholder={activeConfig.queryPlaceholder} /></span>
-        </label>
-        <button className="pl-button pl-button-primary" type="submit" aria-label="Cari">
-          <MagnifyingGlass size={23} weight="bold" aria-hidden="true" />
-        </button>
-      </form>
+      {invalidFilterCleaned ? (
+        <div className="px-save-banner" style={{ background: "#fff8e6", borderColor: "#ffe082", color: "#8c6b00" }}>
+          <Info size={19} weight="fill" /> Filter yang tidak dikenali telah dibersihkan.
+        </div>
+      ) : null}
 
       <div className="px-active-filter-row">
-        <span>{results.length} hasil</span>
-        {activeFilters.map(([key, value]) => (
-          <button onClick={() => clearFilter(key)} type="button" key={key}>
-            {filterLabels[key]}: {value} <X size={14} />
-          </button>
-        ))}
-        {activeFilters.length ? (
-          <button className="clear" onClick={() => {
-            const next = new URLSearchParams();
-            next.set("scope", scope);
-            if (q) next.set("q", q);
-            setLocalSelected(null);
-            replaceQuery(next);
-          }} type="button">Hapus semua</button>
+        <span>{results.length} hasil {q ? `untuk "${q}"` : ""}</span>
+        {activeFilters.map(([key, value]) => {
+          let labelVal = value;
+          if (key === "deadlineRange") {
+            if (value === "7_DAYS") labelVal = "≤ 7 Hari";
+            else if (value === "30_DAYS") labelVal = "≤ 30 Hari";
+            else if (value === "OVER_30_DAYS") labelVal = "> 30 Hari";
+          }
+          if (key === "ownership") {
+            if (value === "internal") labelVal = "Internal Nexa";
+            else if (value === "external") labelVal = "Eksternal & Mitra";
+            else labelVal = "Semua";
+          }
+          if (key === "organization") labelVal = "Nexa Research Lab";
+          return (
+            <button onClick={() => clearFilter(key)} type="button" key={key}>
+              {key === "organization" ? "Konteks" : (filterLabels[key] ?? key)}: {labelVal} <X size={14} />
+            </button>
+          );
+        })}
+        {(activeFilters.length || q) ? (
+          <button className="clear" onClick={resetAllFilters} type="button">Hapus semua filter</button>
         ) : null}
       </div>
 
       <div className="px-search-layout">
-        <aside className="px-filter-panel">
-          <div className="px-filter-title"><Faders size={20} /><strong>Filter</strong></div>
-          {activeConfig.filters.map((key) => (
-            <label key={key}>
-              <span>{filterLabels[key]}</span>
-              <select
-                value={searchParams.get(key) ?? ""}
-                onChange={(event) => {
-                  const next = new URLSearchParams(searchParams.toString());
-                  event.target.value ? next.set(key, event.target.value) : next.delete(key);
-                  next.delete("selected");
-                  replaceQuery(next);
-                }}
-              >
-                <option value="">Semua</option>
-                {filterOptions[key].map((value) => <option value={value} key={value}>{value}</option>)}
-              </select>
-            </label>
-          ))}
-          <label>
-            <span>Urutkan</span>
-            <select
-              value={sort}
-              onChange={(event) => {
-                const next = new URLSearchParams(searchParams.toString());
-                event.target.value === "relevance" ? next.delete("sort") : next.set("sort", event.target.value);
-                replaceQuery(next);
-              }}
-            >
-              {activeConfig.sorts.map((value) => <option value={value} key={value}>{value === "relevance" ? "Paling relevan" : value}</option>)}
-            </select>
-          </label>
-        </aside>
 
         <section className="px-result-list" aria-label="Hasil pencarian">
           {prototypeState === "loading" ? (
@@ -432,8 +494,9 @@ export function ContextualSearchExperience({ initialScope }: { initialScope?: Se
                 <span>Coba bidang terkait: IoT atau Environmental Data</span>
                 <span>Hapus filter kesiapan atau lokasi</span>
               </div>
-              <a className="pl-button pl-button-primary" href={`/search?scope=${scope}${q ? `&q=${encodeURIComponent(q)}` : ""}`}>Perluas pencarian</a>
-              <a className="pl-button pl-button-secondary" href={saveHref}>Simpan setelah masuk</a>
+              <button className="pl-button pl-button-primary pl-action-primary" onClick={resetAllFilters} type="button">
+                Reset semua filter
+              </button>
             </div>
           )}
         </section>
@@ -907,12 +970,7 @@ export function OrganizationWorkspaceExperience({ section }: { section: string }
     const selectedItem = results.find((item) => item.slug === localSelected) ?? results[0];
     return (
       <div className="px-org-search">
-        <header className="px-search-heading"><div><p className="pl-eyebrow">Nexa Research Lab · {scope === "talent" ? "Cari talent" : "Cari proyek"}</p><h1>Bandingkan alasan, evidence, dan gap sebelum bertindak.</h1></div><a className="pl-button pl-button-secondary" href="/organization/nexa-research-lab/shortlists">Shared shortlists ({orgState.shortlists.length})</a></header>
-        <form className="px-search-command" action="/organization/nexa-research-lab/search">
-          <input name="scope" type="hidden" value={scope} />
-          <label className="px-query-field"><span>Masalah atau kebutuhan</span><span><MagnifyingGlass size={20} /><input defaultValue={q} name="q" placeholder={scope === "talent" ? "Contoh: computer vision untuk inspeksi termal" : "Contoh: predictive maintenance motor industri"} /></span></label>
-          <button className="pl-button pl-button-primary" type="submit">Cari</button>
-        </form>
+        <header className="px-search-heading"><div><p className="pl-eyebrow">Nexa Research Lab · {scope === "talent" ? "Cari talent" : "Cari proyek"}</p><h1>Bandingkan alasan, evidence, dan gap sebelum bertindak.</h1><p>Gunakan search bar pada Navbar di atas untuk pencarian organisasi.</p></div><a className="pl-button pl-button-secondary" href="/organization/nexa-research-lab/shortlists">Shared shortlists ({orgState.shortlists.length})</a></header>
         <div className="px-org-mobile-tabs" aria-label="Tahap pencarian organisasi">
           <button aria-controls="org-filter-panel" aria-pressed={mobilePanel === "filters"} className={mobilePanel === "filters" ? "active" : ""} onClick={() => setMobilePanel("filters")} type="button">Filter</button>
           <button aria-controls="org-result-panel" aria-pressed={mobilePanel === "results"} className={mobilePanel === "results" ? "active" : ""} onClick={() => setMobilePanel("results")} type="button">Hasil ({results.length})</button>
